@@ -1,0 +1,48 @@
+{
+  "actor": {
+    "model": "gpt-5.4",
+    "base_url": "http://127.0.0.1:3888/v1",
+    "api_key": "YOUR_API_KEY_HERE",
+    "temperature": 0.2,
+    "timeout_seconds": 180,
+    "enable_thinking": true,
+    "stream": false
+  },
+  "critic": {
+    "model": "gpt-5.4",
+    "base_url": "http://127.0.0.1:3888/v1",
+    "api_key": "YOUR_API_KEY_HERE",
+    "temperature": 0.2,
+    "timeout_seconds": 180,
+    "enable_thinking": true,
+    "stream": false
+  },
+  "executor": {
+    "model": "qwen3-8b",
+    "base_url": "http://127.0.0.1:3888/v1",
+    "api_key": "YOUR_API_KEY_HERE",
+    "temperature": 0.1,
+    "timeout_seconds": 180,
+    "enable_thinking": true,
+    "stream": true
+  },
+  "paths": {
+    "workspace_root": "/abs/path/to/project_gaia_skillrl",
+    "prompt_root": "/abs/path/to/project_gaia_skillrl/prompts",
+    "run_root": "/abs/path/to/project_gaia_skillrl/runs",
+    "skill_library_root": "/abs/path/to/project_gaia_skillrl/skill_library",
+    "experience_buffer_path": "/abs/path/to/project_gaia_skillrl/runtime_state/experience_buffer.jsonl",
+    "dataset_cache_root": "/abs/path/to/project_gaia_skillrl/data/cache",
+    "task_workspace_root": "/abs/path/to/project_gaia_skillrl/data/working/tasks",
+    "converted_dataset_path": "/abs/path/to/project_gaia_skillrl/data/converted/gaia_validation_tasks.json"
+  },
+  "runtime": {
+    "max_executor_steps": 12,
+    "iterations_per_batch": 1,
+    "max_context_chars": 28000,
+    "python_executable": "python3",
+    "shell_program": "/bin/bash",
+    "search_results_limit": 5,
+    "web_fetch_char_limit": 6000
+  }
+}

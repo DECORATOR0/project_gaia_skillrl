@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+gaia_skillrl.egg-info/
+configs/system.json
+
+data/cache/
+data/converted/
+data/raw/
+data/working/
+runs/
+runtime_state/
