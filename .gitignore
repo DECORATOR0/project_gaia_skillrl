@@ -4,7 +4,6 @@ __pycache__/
 .pytest_cache/
 .DS_Store
 gaia_skillrl.egg-info/
-configs/system.json
 
 data/cache/
 data/converted/

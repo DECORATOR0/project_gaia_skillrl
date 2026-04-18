@@ -26,8 +26,3 @@
 
 - 当前机器没有 `conda/mamba`，本项目默认使用 `uv` 管理 `.venv`。
 - 如果后续机器补齐了 `conda`，再决定是否切换。
-
-配置说明：
-
-- 本地实际运行配置使用 `configs/system.json`，该文件默认不纳入版本控制。
-- 仓库内提供 `configs/system.example.json` 作为模板，填入本机路径、base URL 和 API key 后再本地使用。
