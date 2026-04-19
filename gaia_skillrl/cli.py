@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from .config import load_system_config
+from .config import clone_system_config, load_system_config
 from .dataset import build_gaia_converted_dataset
 from .trainer import GaiaSkillTrainer
 from .utils import ensure_preferred_proxy_env
@@ -28,6 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
     smoke.add_argument("--task-id", action="append", default=[])
     smoke.add_argument("--level", type=int, default=None)
     smoke.add_argument("--run-name", default=None)
+    smoke.add_argument("--bootstrap-skill", action="store_true")
 
     train_local = subparsers.add_parser("train-local", help="Run the skill-training loop on an existing local converted dataset.")
     train_local.add_argument("--dataset-path", default=None)
@@ -35,6 +36,7 @@ def build_parser() -> argparse.ArgumentParser:
     train_local.add_argument("--task-id", action="append", default=[])
     train_local.add_argument("--level", type=int, default=None)
     train_local.add_argument("--run-name", default=None)
+    train_local.add_argument("--bootstrap-skill", action="store_true")
 
     direct_eval = subparsers.add_parser("direct-eval-local", help="Run a no-skill direct executor baseline on an existing local converted dataset.")
     direct_eval.add_argument("--dataset-path", default=None)
@@ -51,6 +53,8 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
     config = load_system_config(args.config)
+    if getattr(args, "bootstrap_skill", False):
+        config = clone_system_config(config, runtime={"bootstrap_initial_skill": True})
 
     if args.command == "download-gaia":
         path = build_gaia_converted_dataset(

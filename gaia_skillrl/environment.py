@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from .agent_loop import DirectExecutorAgent, PhaseExecutorAgent
@@ -31,7 +32,10 @@ _DEFAULT_PHASES = {
         name="GATHER",
         content=(
             "Collect evidence from local attachments first.\n"
-            "Use `extract_pdf_text` for PDFs, `read_table` for spreadsheets, `read_file` for text/HTML/JSON, and `image_metadata` for images.\n"
+            "Use attachment-specific tools when they fit: `extract_pdf_text` for PDFs, `read_table` for spreadsheets, `read_file` for plain text/JSON, "
+            "`parse_docx` for DOCX, `parse_pptx` for PPTX, `extract_archive` for zip/tar bundles, `html_extract` for HTML, "
+            "`audio_transcribe` for audio, and `ocr_image` or `image_qa` for images.\n"
+            "Use `ocr_image` when the answer depends on text visible inside the image. Use `image_qa` when the answer depends on visual semantics, object positions, charts, or board states, and pass the task question or a tightly scoped sub-question.\n"
             "Use `web_search` and `fetch_url` only if the local files are insufficient.\n"
             "Do not answer in this phase.\n"
             "When the relevant evidence is collected, move to ANALYZE."
@@ -99,8 +103,15 @@ def _build_phase_tool_allowlist() -> dict[str, list[str]]:
             "extract_pdf_text",
             "read_table",
             "image_metadata",
+            "audio_transcribe",
+            "ocr_image",
+            "image_qa",
+            "parse_docx",
+            "parse_pptx",
+            "extract_archive",
             "web_search",
             "fetch_url",
+            "html_extract",
         ],
         "ANALYZE": [
             "list_dir",
@@ -109,8 +120,15 @@ def _build_phase_tool_allowlist() -> dict[str, list[str]]:
             "extract_pdf_text",
             "read_table",
             "image_metadata",
+            "audio_transcribe",
+            "ocr_image",
+            "image_qa",
+            "parse_docx",
+            "parse_pptx",
+            "extract_archive",
             "web_search",
             "fetch_url",
+            "html_extract",
             "run_python",
         ],
         "CONCLUDE": [],
@@ -234,6 +252,12 @@ def _build_tool_context(config: SystemConfig) -> ToolContext:
         shell_program=config.runtime.shell_program,
         search_results_limit=config.runtime.search_results_limit,
         web_fetch_char_limit=config.runtime.web_fetch_char_limit,
+        tool_api_base_url=os.environ.get("NLRL_TOOL_BASE_URL", "").strip() or config.executor.base_url,
+        tool_api_key=os.environ.get("NLRL_TOOL_API_KEY", "").strip() or config.executor.api_key,
+        tool_api_timeout_seconds=int(os.environ.get("NLRL_TOOL_TIMEOUT_SECONDS", "").strip() or config.executor.timeout_seconds),
+        tool_vision_model=os.environ.get("NLRL_TOOL_VISION_MODEL", "").strip() or os.environ.get("NLRL_TOOL_MODEL", "").strip() or "gpt-4o-mini",
+        tool_audio_model=os.environ.get("NLRL_TOOL_AUDIO_MODEL", "").strip() or os.environ.get("NLRL_TOOL_MODEL", "").strip() or "gpt-4o-mini-transcribe",
+        tool_api_max_retries=int(os.environ.get("NLRL_TOOL_MAX_RETRIES", "").strip() or "2"),
     )
 
 
@@ -267,6 +291,7 @@ class DirectEnvironment:
             "No activated skill is provided in this run. Solve the task directly with the available tools.\n\n"
             "Suggested approach:\n"
             "- inspect `task.json` and local files first\n"
+            "- pick the attachment-specific tool first: `audio_transcribe`, `ocr_image`, `image_qa`, `parse_docx`, `parse_pptx`, `extract_archive`, or `html_extract`\n"
             "- use web tools only when the task needs external evidence\n"
             "- use `run_python` for arithmetic or structured parsing\n"
             "- answer with the exact final short string only when the evidence is sufficient"

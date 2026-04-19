@@ -11,3 +11,5 @@ data/raw/
 data/working/
 runs/
 runtime_state/
+
+external_refs/gaia-agent/

@@ -39,6 +39,7 @@ class RuntimeConfig:
     max_executor_steps: int = 20
     iterations_per_batch: int = 1
     task_concurrency: int = 1
+    bootstrap_initial_skill: bool = False
     max_context_chars: int = 0
     python_executable: str = "python3"
     shell_program: str = "/bin/bash"
@@ -171,6 +172,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         "max_executor_steps": _env_override("NLRL_RUNTIME_MAX_EXECUTOR_STEPS"),
         "iterations_per_batch": _env_override("NLRL_RUNTIME_ITERATIONS_PER_BATCH"),
         "task_concurrency": _env_override("NLRL_RUNTIME_TASK_CONCURRENCY"),
+        "bootstrap_initial_skill": _env_override("NLRL_RUNTIME_BOOTSTRAP_INITIAL_SKILL"),
         "max_context_chars": _env_override("NLRL_RUNTIME_MAX_CONTEXT_CHARS"),
         "python_executable": _env_override("NLRL_RUNTIME_PYTHON_EXECUTABLE"),
         "shell_program": _env_override("NLRL_RUNTIME_SHELL_PROGRAM"),
@@ -182,6 +184,8 @@ def load_system_config(path: str | Path) -> SystemConfig:
             continue
         if key in {"max_executor_steps", "iterations_per_batch", "task_concurrency", "max_context_chars", "search_results_limit", "web_fetch_char_limit"}:
             runtime_raw[key] = int(value)
+        elif key in {"bootstrap_initial_skill"}:
+            runtime_raw[key] = value.strip().lower() in {"1", "true", "yes", "on"}
         else:
             runtime_raw[key] = value
     valid_runtime_keys = {field_info.name for field_info in fields(RuntimeConfig)}

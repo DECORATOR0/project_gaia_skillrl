@@ -7,6 +7,7 @@ import shutil
 from typing import Any
 
 from .actor import SkillActor
+from .bootstrap import SkillBootstrapper
 from .config import SystemConfig, clone_system_config
 from .critic import SkillCritic
 from .dataset import build_gaia_converted_dataset, load_converted_dataset, select_tasks
@@ -32,8 +33,15 @@ allowed-tools:
   - extract_pdf_text
   - read_table
   - image_metadata
+  - audio_transcribe
+  - ocr_image
+  - image_qa
+  - parse_docx
+  - parse_pptx
+  - extract_archive
   - web_search
   - fetch_url
+  - html_extract
   - run_python
 metadata:
   benchmark: GAIA
@@ -57,7 +65,8 @@ Goal: collect evidence from the task attachment first, then from the web only if
 
 Instructions:
 - Prefer local files before web search.
-- Use `extract_pdf_text` for PDFs, `read_table` for CSV/XLSX, `read_file` for txt/json/html, and `image_metadata` only to inspect image basics.
+- Use the attachment-specific tool that matches the file type: `extract_pdf_text` for PDFs, `read_table` for CSV/XLSX, `read_file` for txt/json, `html_extract` for HTML, `parse_docx` for DOCX, `parse_pptx` for PPTX, `extract_archive` for archives, `audio_transcribe` for audio, and `ocr_image` or `image_qa` for images.
+- Use `ocr_image` when the answer depends on text visible inside an image. Use `image_qa` when the answer depends on visual semantics, object positions, charts, or board states, and pass the task question or a tightly scoped sub-question.
 - Use `web_search` and `fetch_url` only when the question clearly needs external information.
 - Do not guess filenames or URLs.
 - Do not answer in this phase.
@@ -90,6 +99,7 @@ Instructions:
 
 - Read `task.json` before opening attachments.
 - Prefer attachment evidence before external search.
+- Match each attachment type to its dedicated tool before falling back to generic file reads.
 - Use `run_python` whenever arithmetic or deterministic parsing is involved.
 - Return a short final answer string without extra formatting.
 """,
@@ -139,6 +149,35 @@ class GaiaSkillTrainer:
     def _write_default_skill(self, config: SystemConfig) -> Path:
         reset_skill_library(config.skill_library_root)
         return write_skill_bundle(config.skill_library_root, "gaia-general-skill", _DEFAULT_SKILL_FILES)
+
+    def _initialize_skill_library(
+        self,
+        *,
+        config: SystemConfig,
+        selected_tasks: list[DatasetTask],
+        run_dir: Path,
+        logger: logging.Logger,
+    ) -> Path:
+        if not config.runtime.bootstrap_initial_skill:
+            logger.info("Initializing skill library from built-in default skill")
+            return self._write_default_skill(config)
+
+        logger.info("Bootstrapping initial skill from %d selected tasks", len(selected_tasks))
+        bootstrap_dir = ensure_dir(run_dir / "bootstrap")
+        decision = SkillBootstrapper(config).bootstrap(selected_tasks, bootstrap_dir)
+        reset_skill_library(config.skill_library_root)
+        skill_dir = write_skill_bundle(
+            config.skill_library_root,
+            str(decision.get("target_skill_name") or "gaia-general-skill"),
+            {
+                str(path): str(content)
+                for path, content in dict(decision.get("files_to_write", {})).items()
+            },
+        )
+        active_skill = self._load_active_skill(config.skill_library_root)
+        self._snapshot_active_skill(active_skill, bootstrap_dir / "skill_after_bootstrap")
+        logger.info("Bootstrapped initial skill ready: %s", active_skill.header.name)
+        return skill_dir
 
     def _load_active_skill(self, skill_library_root: Path) -> SkillDetail:
         headers = discover_skills(skill_library_root)
@@ -262,7 +301,12 @@ class GaiaSkillTrainer:
         reset_experience_buffer(state_config.experience_buffer_path)
         task_concurrency = max(1, state_config.runtime.task_concurrency)
 
-        self._write_default_skill(state_config)
+        self._initialize_skill_library(
+            config=state_config,
+            selected_tasks=selected_tasks,
+            run_dir=run_dir,
+            logger=logger,
+        )
         actor = SkillActor(state_config)
         critic = SkillCritic(state_config)
         history_poll: list[dict[str, Any]] = []

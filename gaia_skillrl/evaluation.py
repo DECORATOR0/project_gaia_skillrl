@@ -1,21 +1,13 @@
 from __future__ import annotations
 
-import re
 from typing import Any
 
+from .gaia_scorer import normalize_str, question_scorer
 from .schemas import EvaluationResult, ToolCallRecord
 
 
 def normalize_answer(text: str) -> str:
-    cleaned = str(text or "").strip()
-    cleaned = cleaned.strip("`")
-    cleaned = cleaned.strip('"').strip("'")
-    cleaned = cleaned.replace("\r\n", "\n").replace("\r", "\n")
-    cleaned = re.sub(r"\s+", " ", cleaned)
-    cleaned = cleaned.strip().lower()
-    if cleaned.endswith("."):
-        cleaned = cleaned[:-1].rstrip()
-    return cleaned
+    return normalize_str(text, remove_punct=False)
 
 
 def evaluate_execution(
@@ -27,13 +19,14 @@ def evaluate_execution(
     gold_trajectory: list[dict[str, Any]],
     gold_answer: str,
 ) -> EvaluationResult:
-    predicted = normalize_answer(final_answer or final_choice_label)
+    raw_prediction = final_answer or final_choice_label
+    predicted = normalize_answer(raw_prediction)
     gold = normalize_answer(gold_answer)
-    success = bool(predicted) and predicted == gold
+    success = question_scorer(raw_prediction, gold_answer)
     step_count = len(executed_steps)
     successful_tool_calls = sum(1 for item in executed_steps if item.success)
     efficiency = 0.0 if step_count == 0 else round(successful_tool_calls / step_count, 4)
-    notes = f"pred={predicted!r} gold={gold!r}"
+    notes = f"pred={predicted!r} gold={gold!r} official_gaia_match={success}"
     return EvaluationResult(
         accuracy=1.0 if success else 0.0,
         efficiency=efficiency,
