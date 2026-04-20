@@ -13,3 +13,6 @@ runs/
 runtime_state/
 
 external_refs/gaia-agent/
+
+# Local experiment notes and design scratch docs
+实验设计与迭代/

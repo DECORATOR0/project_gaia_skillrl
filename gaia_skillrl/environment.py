@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 
 from .agent_loop import DirectExecutorAgent, PhaseExecutorAgent
@@ -68,24 +69,53 @@ _DEFAULT_PHASES = {
 }
 
 
+_TOOL_CALL_RE = re.compile(r"<CALL>\s*([A-Za-z0-9_]+)\s*</CALL>", re.IGNORECASE)
+_ALLOWED_TOOLS_RE = re.compile(r"^\s*Allowed tools:\s*(.+?)\s*$", re.IGNORECASE)
+_NEXT_RE = re.compile(r"^\s*Next:\s*(.+?)\s*$", re.IGNORECASE)
+_PHASE_ID_RE = re.compile(r"\b[A-Z][A-Z0-9_]{1,}\b")
+
+
 def _ensure_phases(phases: dict[str, SkillPhase]) -> dict[str, SkillPhase]:
-    result = dict(phases)
-    for name, phase in _DEFAULT_PHASES.items():
-        result.setdefault(name, phase)
+    if phases:
+        return dict(phases)
+    return dict(_DEFAULT_PHASES)
+
+
+def _unique_preserve_order(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for item in items:
+        if item in seen:
+            continue
+        seen.add(item)
+        result.append(item)
     return result
+
+
+def _extract_next_phases(phase: SkillPhase, phase_names: set[str]) -> list[str]:
+    candidates: list[str] = []
+    for line in phase.content.splitlines():
+        match = _NEXT_RE.match(line)
+        if not match:
+            continue
+        for token in _PHASE_ID_RE.findall(match.group(1).upper()):
+            if token in phase_names and token != phase.name:
+                candidates.append(token)
+    return _unique_preserve_order(candidates)
 
 
 def _build_phase_transition_graph(phases: dict[str, SkillPhase]) -> dict[str, list[str]]:
     ordered = sorted(phases.values(), key=lambda phase: phase.order)
     names = [phase.name for phase in ordered]
+    phase_names = set(names)
     graph: dict[str, list[str]] = {}
     for index, name in enumerate(names):
-        if name == "CONCLUDE":
-            graph[name] = []
+        explicit_next = _extract_next_phases(phases[name], phase_names)
+        if explicit_next:
+            graph[name] = explicit_next
             continue
         next_phase = names[index + 1] if index + 1 < len(names) else None
         graph[name] = [next_phase] if next_phase else []
-    graph.setdefault("CONCLUDE", [])
     return graph
 
 
@@ -93,45 +123,46 @@ def _phase_prompt(name: str, content: str) -> str:
     return f"=== Phase: {name} ===\n\n{content}\n\nFollow the instructions above for this phase."
 
 
-def _build_phase_tool_allowlist() -> dict[str, list[str]]:
+def _extract_allowed_tools(phase: SkillPhase, skill_allowed_tools: list[str]) -> list[str]:
+    allowed_set = set(skill_allowed_tools)
+    tools: list[str] = []
+    explicit_allowed_line = False
+
+    for line in phase.content.splitlines():
+        match = _ALLOWED_TOOLS_RE.match(line)
+        if not match:
+            continue
+        explicit_allowed_line = True
+        raw = match.group(1).strip()
+        if raw.lower() in {"none", "no tools", "`none`"}:
+            return []
+        backticked = re.findall(r"`([A-Za-z0-9_]+)`", raw)
+        if backticked:
+            tools.extend(backticked)
+        else:
+            tools.extend(
+                item.strip().strip(",")
+                for item in raw.split(",")
+                if item.strip().strip(",")
+            )
+
+    tools.extend(_TOOL_CALL_RE.findall(phase.content))
+    tools = [tool for tool in tools if not allowed_set or tool in allowed_set]
+    if tools or explicit_allowed_line:
+        return _unique_preserve_order(tools)
+
+    if phase.name == "CONCLUDE":
+        return []
+    return list(skill_allowed_tools)
+
+
+def _build_phase_tool_allowlist(
+    phases: dict[str, SkillPhase],
+    skill_allowed_tools: list[str],
+) -> dict[str, list[str]]:
     return {
-        "INIT": ["list_dir", "read_json_file"],
-        "GATHER": [
-            "list_dir",
-            "read_file",
-            "read_json_file",
-            "extract_pdf_text",
-            "read_table",
-            "image_metadata",
-            "audio_transcribe",
-            "ocr_image",
-            "image_qa",
-            "parse_docx",
-            "parse_pptx",
-            "extract_archive",
-            "web_search",
-            "fetch_url",
-            "html_extract",
-        ],
-        "ANALYZE": [
-            "list_dir",
-            "read_file",
-            "read_json_file",
-            "extract_pdf_text",
-            "read_table",
-            "image_metadata",
-            "audio_transcribe",
-            "ocr_image",
-            "image_qa",
-            "parse_docx",
-            "parse_pptx",
-            "extract_archive",
-            "web_search",
-            "fetch_url",
-            "html_extract",
-            "run_python",
-        ],
-        "CONCLUDE": [],
+        name: _extract_allowed_tools(phase, skill_allowed_tools)
+        for name, phase in phases.items()
     }
 
 
@@ -201,7 +232,10 @@ class SkillEnvironment:
                 phase_transition_graph=transition_graph,
                 resolved_conclude_prompt=resolved_conclude_prompt,
                 fallback_conclude_prompt=fallback_conclude_prompt,
-                phase_tool_allowlist=_build_phase_tool_allowlist(),
+                phase_tool_allowlist=_build_phase_tool_allowlist(
+                    phases,
+                    active_skill.header.allowed_tools or [],
+                ),
             )
         finally:
             self.toolbox.set_active_skill_dir(None)
@@ -291,7 +325,7 @@ class DirectEnvironment:
             "No activated skill is provided in this run. Solve the task directly with the available tools.\n\n"
             "Suggested approach:\n"
             "- inspect `task.json` and local files first\n"
-            "- pick the attachment-specific tool first: `audio_transcribe`, `ocr_image`, `image_qa`, `parse_docx`, `parse_pptx`, `extract_archive`, or `html_extract`\n"
+            "- matching tools are available for DOCX, PPTX, archives, HTML, audio, and image files when needed\n"
             "- use web tools only when the task needs external evidence\n"
             "- use `run_python` for arithmetic or structured parsing\n"
             "- answer with the exact final short string only when the evidence is sufficient"

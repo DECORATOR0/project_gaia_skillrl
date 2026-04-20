@@ -250,28 +250,15 @@ def _invalid_phase_tool_feedback(current_phase: str, tool_name: str, allowed_too
 
 def _phase_runtime_instruction(current_phase: str, allowed_next: list[str]) -> str:
     allowed_next_text = _format_allowed_next(allowed_next)
-    if current_phase == "INIT":
-        return (
-            "You are still in INIT. Only inspect the local task layout in this phase.\n"
-            "Do not answer yet.\n"
-            f"Allowed next: {allowed_next_text}\n"
-            "After `list_dir` and `read_json_file`, emit <NEXT>GATHER</NEXT>."
-        )
-    if current_phase == "GATHER":
-        return (
-            "You are still in GATHER. Collect evidence before analysis.\n"
-            "Do not answer yet.\n"
-            f"Allowed next: {allowed_next_text}\n"
-            "Use tools if evidence is still missing, or emit <NEXT>ANALYZE</NEXT> when evidence is sufficient."
-        )
-    if current_phase == "ANALYZE":
-        return (
-            "You are still in ANALYZE. Convert evidence into the exact final answer string.\n"
-            "Do not answer yet.\n"
-            f"Allowed next: {allowed_next_text}\n"
-            "Check units, scale, rounding, and formatting, then emit <NEXT>CONCLUDE</NEXT>."
-        )
-    return "You are in CONCLUDE. Output only the final short answer inside <ANSWER>...</ANSWER>."
+    if current_phase == "CONCLUDE":
+        return "You are in CONCLUDE. Output only the final short answer inside <ANSWER>...</ANSWER>."
+    return (
+        f"You are still in {current_phase}. Follow this phase's visible-memory, tool, and exit-handoff rules.\n"
+        "Do not answer yet.\n"
+        f"Allowed next: {allowed_next_text}\n"
+        "If this phase's exit handoff is ready, emit <NEXT>PHASE_NAME</NEXT> using one allowed next phase. "
+        "If more evidence or computation is needed, call exactly one allowed tool next."
+    )
 
 
 def _direct_runtime_instruction(*, remaining_steps: int) -> str:
@@ -343,7 +330,7 @@ class PhaseExecutorAgent:
 
         for step_idx in range(1, max_steps + 1):
             remaining_steps = max_steps - step_idx + 1
-            if current_phase == "ANALYZE" and remaining_steps <= 3:
+            if current_phase != "CONCLUDE" and remaining_steps <= 3 and "CONCLUDE" in phase_transition_graph.get(current_phase, []):
                 raw_outputs.append("[runtime_feedback] [fallback conclude] remaining_steps<=3")
                 transitions.append(
                     PhaseTransition(

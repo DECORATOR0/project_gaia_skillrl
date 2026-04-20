@@ -40,6 +40,7 @@ class RuntimeConfig:
     iterations_per_batch: int = 1
     task_concurrency: int = 1
     bootstrap_initial_skill: bool = False
+    initial_skill_path: str = ""
     max_context_chars: int = 0
     python_executable: str = "python3"
     shell_program: str = "/bin/bash"
@@ -173,6 +174,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         "iterations_per_batch": _env_override("NLRL_RUNTIME_ITERATIONS_PER_BATCH"),
         "task_concurrency": _env_override("NLRL_RUNTIME_TASK_CONCURRENCY"),
         "bootstrap_initial_skill": _env_override("NLRL_RUNTIME_BOOTSTRAP_INITIAL_SKILL"),
+        "initial_skill_path": _env_override("NLRL_RUNTIME_INITIAL_SKILL_PATH"),
         "max_context_chars": _env_override("NLRL_RUNTIME_MAX_CONTEXT_CHARS"),
         "python_executable": _env_override("NLRL_RUNTIME_PYTHON_EXECUTABLE"),
         "shell_program": _env_override("NLRL_RUNTIME_SHELL_PROGRAM"),

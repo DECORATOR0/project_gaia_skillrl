@@ -158,6 +158,21 @@ class GaiaSkillTrainer:
         run_dir: Path,
         logger: logging.Logger,
     ) -> Path:
+        if config.runtime.initial_skill_path:
+            initial_skill_path = Path(config.runtime.initial_skill_path).resolve()
+            if not initial_skill_path.exists():
+                raise FileNotFoundError(f"Initial skill path does not exist: {initial_skill_path}")
+            logger.info("Initializing skill library from external SKILL.md: %s", initial_skill_path)
+            reset_skill_library(config.skill_library_root)
+            skill_dir = write_skill_bundle(
+                config.skill_library_root,
+                "gaia-general-skill",
+                {"SKILL.md": initial_skill_path.read_text(encoding="utf-8")},
+            )
+            active_skill = self._load_active_skill(config.skill_library_root)
+            self._snapshot_active_skill(active_skill, run_dir / "initial_skill")
+            return skill_dir
+
         if not config.runtime.bootstrap_initial_skill:
             logger.info("Initializing skill library from built-in default skill")
             return self._write_default_skill(config)
