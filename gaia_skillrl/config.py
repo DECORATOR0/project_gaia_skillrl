@@ -46,6 +46,8 @@ class RuntimeConfig:
     shell_program: str = "/bin/bash"
     search_results_limit: int = 5
     web_fetch_char_limit: int = 6000
+    critic_strategy: str = "full"
+    critic_shard_size: int = 12
 
 
 @dataclass
@@ -180,11 +182,21 @@ def load_system_config(path: str | Path) -> SystemConfig:
         "shell_program": _env_override("NLRL_RUNTIME_SHELL_PROGRAM"),
         "search_results_limit": _env_override("NLRL_RUNTIME_SEARCH_RESULTS_LIMIT"),
         "web_fetch_char_limit": _env_override("NLRL_RUNTIME_WEB_FETCH_CHAR_LIMIT"),
+        "critic_strategy": _env_override("NLRL_RUNTIME_CRITIC_STRATEGY"),
+        "critic_shard_size": _env_override("NLRL_RUNTIME_CRITIC_SHARD_SIZE"),
     }
     for key, value in runtime_env_overrides.items():
         if value is None:
             continue
-        if key in {"max_executor_steps", "iterations_per_batch", "task_concurrency", "max_context_chars", "search_results_limit", "web_fetch_char_limit"}:
+        if key in {
+            "max_executor_steps",
+            "iterations_per_batch",
+            "task_concurrency",
+            "max_context_chars",
+            "search_results_limit",
+            "web_fetch_char_limit",
+            "critic_shard_size",
+        }:
             runtime_raw[key] = int(value)
         elif key in {"bootstrap_initial_skill"}:
             runtime_raw[key] = value.strip().lower() in {"1", "true", "yes", "on"}

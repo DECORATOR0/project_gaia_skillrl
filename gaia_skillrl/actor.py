@@ -7,9 +7,11 @@ from .config import SystemConfig
 from .llm import OpenAICompatibleLLM, log_llm_call
 from .prompting import render_prompt
 from .schemas import ActorDecision, CriticReward, ExperienceEntry, LLMMessage, SkillDetail
+from .skill_graph import graph_signature, graph_signature_from_phases
 from .skills import (
     append_experience,
     load_experience_buffer,
+    parse_skill_phases,
     retrieve_similar_experiences,
     write_skill_bundle,
 )
@@ -41,10 +43,12 @@ class SkillActor:
                     "body": skill.body,
                     "phase_order": sorted(skill.phases.keys(), key=lambda n: skill.phases[n].order),
                     "resources": skill.resources,
+                    "graph_signature": graph_signature(skill),
                 },
                 ensure_ascii=False,
                 indent=2,
             ),
+            graph_signature_json=json.dumps(graph_signature(skill), ensure_ascii=False, indent=2),
             history_poll_json=json.dumps(
                 history_poll[-5:] if history_poll else [],
                 ensure_ascii=False,
@@ -66,6 +70,12 @@ class SkillActor:
         log_llm_call(log_dir, "actor_modify_skill", llm_result)
 
         target_name = str(payload.get("target_skill_name", skill.header.name))
+        if target_name != skill.header.name:
+            raise ValueError(
+                f"Actor attempted to change skill name from {skill.header.name!r} to {target_name!r}."
+            )
+        files_to_write = {str(k): str(v) for k, v in payload.get("files_to_write", {}).items()}
+        self._validate_graph_lock(skill, files_to_write, log_dir)
         entry_payload = payload.get("experience_entry", {}) if isinstance(payload.get("experience_entry", {}), dict) else {}
         experience_entry = ExperienceEntry(
             task_id="batch",
@@ -81,13 +91,33 @@ class SkillActor:
             action_type="modify_skill",
             summary=str(payload.get("summary", "")),
             target_skill_name=target_name,
-            files_to_write={str(k): str(v) for k, v in payload.get("files_to_write", {}).items()},
+            files_to_write=files_to_write,
             files_to_delete=[str(item) for item in payload.get("files_to_delete", [])],
             experience_entry=experience_entry,
             raw_model_output=json.dumps(payload, ensure_ascii=False, indent=2),
         )
         write_json(log_dir / "actor_decision.json", decision.__dict__ | {"experience_entry": experience_entry.__dict__})
         return decision
+
+    @staticmethod
+    def _validate_graph_lock(skill: SkillDetail, files_to_write: dict[str, str], log_dir: Path) -> None:
+        skill_md = files_to_write.get("SKILL.md", "")
+        if not skill_md.strip():
+            raise ValueError("Actor must write a non-empty SKILL.md.")
+        old_signature = graph_signature(skill)
+        new_phases = parse_skill_phases(skill_md)
+        new_signature = graph_signature_from_phases(new_phases)
+        report = {
+            "old_graph_signature": old_signature,
+            "new_graph_signature": new_signature,
+            "graph_unchanged": old_signature == new_signature,
+        }
+        write_json(log_dir / "actor_graph_lock_check.json", report)
+        if old_signature != new_signature:
+            raise ValueError(
+                "Actor graph lock violation: phase order or Next target set changed. "
+                "The actor may only modify common text and node-local instructions."
+            )
 
     def apply(self, decision: ActorDecision) -> None:
         if not decision.target_skill_name:

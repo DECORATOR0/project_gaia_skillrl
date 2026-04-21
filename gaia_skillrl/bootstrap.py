@@ -17,6 +17,50 @@ class SkillBootstrapper:
         self.config = config
         self.llm = OpenAICompatibleLLM(config.actor)
 
+    def _runtime_contract(self) -> dict[str, Any]:
+        return {
+            "executor_model": self.config.executor.model,
+            "max_executor_steps": self.config.runtime.max_executor_steps,
+            "answer_rule": "Only the CONCLUDE phase may emit <ANSWER>...</ANSWER>.",
+            "phase_header_format": "## Phase: NAME",
+            "action_tags": {
+                "tool_call": "<CALL>tool_name</CALL><ARGS>{...}</ARGS>",
+                "phase_transition": "<NEXT>PHASE_NAME</NEXT>",
+                "final_answer": "<ANSWER>short final answer</ANSWER>",
+            },
+            "available_tools": [
+                "list_dir",
+                "read_file",
+                "read_json_file",
+                "extract_pdf_text",
+                "read_table",
+                "image_metadata",
+                "audio_transcribe",
+                "ocr_image",
+                "image_qa",
+                "parse_docx",
+                "parse_pptx",
+                "extract_archive",
+                "web_search",
+                "fetch_url",
+                "html_extract",
+                "run_python",
+            ],
+            "environment_limits": [
+                "Browser automation is unavailable.",
+                "Task workspaces contain task.json and any materialized attachments.",
+            ],
+            "downstream_consumption": [
+                "The executor receives only the INIT phase at task start.",
+                "After an accepted <NEXT> transition, the runtime injects only the target phase content.",
+                "The runtime infers the phase graph from explicit Next: lines; missing Next: lines fall back to phase order.",
+                "The runtime infers per-phase tool allowlists from Allowed tools: lines and concrete <CALL> examples.",
+                "The current phase may emit exactly one action per step: <CALL>, <NEXT>, or <ANSWER>.",
+                "A non-CONCLUDE <ANSWER> is rejected by the runtime.",
+                "An unsupported <NEXT> target is rejected by the runtime.",
+            ],
+        }
+
     @staticmethod
     def _task_attachments(task: DatasetTask) -> list[dict[str, str]]:
         attachments: list[dict[str, str]] = []
@@ -45,6 +89,7 @@ class SkillBootstrapper:
                     "level": task.metadata.get("level"),
                     "split": task.metadata.get("split") or task.source_type,
                     "question": task.prompt,
+                    "gold_answer": task.gold_answer,
                     "attachments": attachments,
                     "file_list": task.file_list,
                 }
@@ -58,13 +103,21 @@ class SkillBootstrapper:
 
     def bootstrap(self, tasks: list[DatasetTask], log_dir: Path) -> dict[str, Any]:
         ensure_dir(log_dir)
+        runtime_contract = self._runtime_contract()
         batch_payload = self._batch_payload(tasks)
+        write_json(
+            log_dir / "bootstrap_input.json",
+            {
+                "runtime_contract": runtime_contract,
+                "batch_task_snapshot": batch_payload,
+            },
+        )
         write_json(log_dir / "bootstrap_batch_input.json", batch_payload)
 
         system_prompt = render_prompt(self.config.prompt_root / "bootstrap_skill_system.md")
         user_prompt = render_prompt(
             self.config.prompt_root / "bootstrap_skill_user.md",
-            current_skills_json="[]",
+            runtime_contract_json=json.dumps(runtime_contract, ensure_ascii=False, indent=2),
             batch_tasks_json=json.dumps(batch_payload, ensure_ascii=False, indent=2),
         )
         payload, llm_result = self.llm.chat_json(
