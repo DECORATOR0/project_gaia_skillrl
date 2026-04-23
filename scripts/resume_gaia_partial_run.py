@@ -100,7 +100,10 @@ def _synthesize_state_for_missing_task(
     }
     phases = _ensure_phases(skill_detail.phases)
     transition_graph = _build_phase_transition_graph(phases)
-    phase_tool_allowlist = _build_phase_tool_allowlist()
+    phase_tool_allowlist = _build_phase_tool_allowlist(
+        phases,
+        skill_detail.header.allowed_tools or [],
+    )
 
     current_phase = "INIT"
     tool_records: list[ToolCallRecord] = []
@@ -349,20 +352,30 @@ def main() -> None:
     parser.add_argument("--run-dir", required=True)
     parser.add_argument("--iterations-per-batch", type=int, default=2)
     parser.add_argument("--task-concurrency", type=int, default=20)
+    parser.add_argument("--max-executor-steps", type=int, default=None)
     args = parser.parse_args()
 
     run_dir = Path(args.run_dir).resolve()
     config = load_system_config(args.config)
+    runtime_overrides = {
+        "iterations_per_batch": args.iterations_per_batch,
+        "task_concurrency": args.task_concurrency,
+    }
+    if args.max_executor_steps is not None:
+        runtime_overrides["max_executor_steps"] = args.max_executor_steps
     config = clone_system_config(
         config,
-        runtime={
-            "iterations_per_batch": args.iterations_per_batch,
-            "task_concurrency": args.task_concurrency,
-        },
+        runtime=runtime_overrides,
     )
     trainer = GaiaSkillTrainer(config)
     logger = trainer._build_logger(run_dir)
     logger.info("Resuming partial GAIA run after manual stop")
+    logger.info(
+        "Runtime: iterations_per_batch=%d task_concurrency=%d max_executor_steps=%d",
+        config.runtime.iterations_per_batch,
+        config.runtime.task_concurrency,
+        config.runtime.max_executor_steps,
+    )
 
     selected_summary = json.loads((run_dir / "selected_tasks.json").read_text(encoding="utf-8"))
     dataset_path = Path(selected_summary.get("dataset_path") or config.converted_dataset_path)

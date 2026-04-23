@@ -66,7 +66,6 @@ JOBS = [
         iterations=1,
         strategy="full",
         skill_from="boot_dev",
-        wait_for_previous="complete",
     ),
     Job(
         key="b_iter1",
@@ -290,12 +289,19 @@ def stop_children(jobs: list[Job]) -> None:
 
 def main() -> int:
     jobs_by_key = {job.key: job for job in JOBS}
-    started = 0
-    start_job(JOBS[0], jobs_by_key)
-    started = 1
+    start_key = os.environ.get("NLRL_QUEUE_START_KEY", "").strip()
+    start_index = 0
+    if start_key:
+        key_to_index = {job.key: index for index, job in enumerate(JOBS)}
+        if start_key not in key_to_index:
+            raise RuntimeError(f"Unknown NLRL_QUEUE_START_KEY={start_key!r}")
+        start_index = key_to_index[start_key]
+    started = start_index
+    start_job(JOBS[start_index], jobs_by_key)
+    started = start_index + 1
     try:
         while True:
-            for job in JOBS[:started]:
+            for job in JOBS[start_index:started]:
                 if job.process is not None and job.process.poll() is not None:
                     code = job.process.returncode
                     if code != 0:
@@ -312,7 +318,10 @@ def main() -> int:
                 if ready and dependency_ready:
                     start_job(next_job, jobs_by_key)
                     started += 1
-            if started == len(JOBS) and all(job.process is not None and job.process.poll() is not None for job in JOBS):
+            if started == len(JOBS) and all(
+                job.process is not None and job.process.poll() is not None
+                for job in JOBS[start_index:]
+            ):
                 log("all jobs completed")
                 return 0
             time.sleep(60)

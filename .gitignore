@@ -16,3 +16,10 @@ external_refs/gaia-agent/
 
 # Local experiment notes and design scratch docs
 实验设计与迭代/
+
+# Local sample assets used for tool smoke/debugging
+/ca8753en.pdf
+/frame30s.png
+/hellofresh_ar_2021.pdf
+/part1.mp4
+/sales_data.csv

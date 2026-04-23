@@ -26,7 +26,11 @@ Architecture task:
 - Provide at least one bounded repair path for missing evidence, failed computation, or failed verification.
 - Avoid phases that only restate, plan, or reflect without tool access, new evidence, computation, route choice, verification, repair, or finalization value.
 - If two phases would have the same tools, same inputs, and same exit condition, merge them.
-- Make `CONCLUDE` reachable quickly from any phase that can produce a final candidate answer.
+- Treat `CONCLUDE` as a gated finalization phase, not as the default exit from every phase.
+- Add a direct edge to `CONCLUDE` only from phases where a concrete final answer can be fully supported and exactly formatted without further extraction, computation, or verification.
+- Do not make every evidence-gathering phase point directly to `CONCLUDE`. Prefer routing through verification or computation when the answer may depend on source grounding, filtering, counting, ordering, unit conversion, date/version scope, or multi-hop joins.
+- If a phase has a direct `CONCLUDE` edge, its Rules must state the strict condition for using that edge, such as "only when the final answer string is already concrete, non-empty, supported by extracted evidence or deterministic computation, and exact in format."
+- `INIT` should usually route to evidence, reasoning, computation, or verification phases. Give `INIT -> CONCLUDE` only for genuinely prompt-only, low-risk answers that need no tools and no verification.
 
 Progressive disclosure design:
 - The executor receives one phase at a time.

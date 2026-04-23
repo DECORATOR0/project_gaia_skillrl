@@ -20,9 +20,9 @@
     "stream": false
   },
   "executor": {
-    "model": "qwen3-8b",
-    "base_url": "http://35.220.164.252:3888/v1",
-    "api_key": "sk-JhritIDG3G8QxS6pPJ1kIfqxWorzSAZgHgkLz4EA0RgFl9lQ",
+    "model": "Qwen/Qwen3-8B",
+    "base_url": "https://api.siliconflow.cn/v1",
+    "api_key": "sk-wxehjqiznhhfprfsfbtjntjjkavcbxosbrkwamntlwrvbdqt",
     "temperature": 0.1,
     "timeout_seconds": 180,
     "enable_thinking": true,

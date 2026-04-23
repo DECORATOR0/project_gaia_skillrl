@@ -358,13 +358,24 @@ class OpenAICompatibleLLM:
         chunks: list[dict[str, Any]] = []
         text_parts: list[str] = []
         finish_reason = ""
+        wall_timeout = float(
+            os.environ.get("NLRL_LLM_STREAM_WALL_TIMEOUT_SECONDS", "").strip()
+            or self.config.timeout_seconds
+        )
         with self._request_slot():
             for attempt in range(self.max_retries + 1):
                 response = None
                 try:
+                    started_at = time.monotonic()
                     with self.client.stream("POST", "chat/completions", json=stream_payload) as response:
                         response.raise_for_status()
                         for raw_line in response.iter_lines():
+                            elapsed = time.monotonic() - started_at
+                            if elapsed > wall_timeout:
+                                raise TimeoutError(
+                                    f"Streaming response exceeded wall timeout of {wall_timeout:.1f}s "
+                                    f"after {len(chunks)} chunks and {len(text_parts)} text fragments."
+                                )
                             if raw_line is None:
                                 continue
                             line = raw_line.strip()
