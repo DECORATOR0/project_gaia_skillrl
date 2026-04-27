@@ -214,19 +214,25 @@ def _format_allowed_next(allowed_next: list[str]) -> str:
     return ", ".join(allowed_next)
 
 
-def _invalid_phase_transition_feedback(current_phase: str, allowed_next: list[str]) -> str:
+def _format_must_choose_feedback(allowed_next: list[str]) -> str:
+    if not allowed_next:
+        return "There are no legal next phases from this phase."
+    return f"You must choose one of: {_format_allowed_next(allowed_next)}."
+
+
+def _invalid_phase_transition_feedback(current_phase: str, requested_next: str, allowed_next: list[str]) -> str:
     return (
         "Invalid phase transition.\n"
-        f"Current phase: {current_phase}\n"
-        f"Allowed next: {_format_allowed_next(allowed_next)}"
+        f"{requested_next} is illegal from {current_phase}.\n"
+        f"{_format_must_choose_feedback(allowed_next)}"
     )
 
 
-def _unknown_phase_feedback(current_phase: str, allowed_next: list[str]) -> str:
+def _unknown_phase_feedback(current_phase: str, requested_next: str, allowed_next: list[str]) -> str:
     return (
         "Unknown phase.\n"
-        f"Current phase: {current_phase}\n"
-        f"Allowed next: {_format_allowed_next(allowed_next)}"
+        f"{requested_next} is an unrecognized phase from {current_phase}.\n"
+        f"{_format_must_choose_feedback(allowed_next)}"
     )
 
 
@@ -488,7 +494,7 @@ class PhaseExecutorAgent:
                 allowed_next = phase_transition_graph.get(current_phase, [])
                 phase_after = current_phase
                 if next_phase not in recognized_phases:
-                    feedback = _unknown_phase_feedback(current_phase, allowed_next)
+                    feedback = _unknown_phase_feedback(current_phase, next_phase, allowed_next)
                     outcome = "unknown_phase"
                     raw_outputs.append(f"[runtime_feedback]\n{feedback}")
                     messages.append(
@@ -498,7 +504,7 @@ class PhaseExecutorAgent:
                         )
                     )
                 elif next_phase not in allowed_next:
-                    feedback = _invalid_phase_transition_feedback(current_phase, allowed_next)
+                    feedback = _invalid_phase_transition_feedback(current_phase, next_phase, allowed_next)
                     outcome = "invalid_phase_transition"
                     raw_outputs.append(f"[runtime_feedback]\n{feedback}")
                     messages.append(
@@ -542,7 +548,7 @@ class PhaseExecutorAgent:
                         )
                     )
                 else:
-                    feedback = _unknown_phase_feedback(current_phase, allowed_next)
+                    feedback = _unknown_phase_feedback(current_phase, next_phase, allowed_next)
                     raw_outputs.append(f"[runtime_feedback]\n{feedback}")
                     messages.append(
                         LLMMessage(

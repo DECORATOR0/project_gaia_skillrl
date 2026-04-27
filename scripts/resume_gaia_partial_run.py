@@ -180,7 +180,7 @@ def _synthesize_state_for_missing_task(
             allowed_next = transition_graph.get(current_phase, [])
             next_phase = parsed.next_phase.strip().upper()
             if next_phase not in phases:
-                feedback = _unknown_phase_feedback(current_phase, allowed_next)
+                feedback = _unknown_phase_feedback(current_phase, next_phase, allowed_next)
                 action_trace.append(
                     ExecutorStepRecord(
                         step_index=step_index,
@@ -198,7 +198,7 @@ def _synthesize_state_for_missing_task(
                 )
                 continue
             if next_phase not in allowed_next:
-                feedback = _invalid_phase_transition_feedback(current_phase, allowed_next)
+                feedback = _invalid_phase_transition_feedback(current_phase, next_phase, allowed_next)
                 action_trace.append(
                     ExecutorStepRecord(
                         step_index=step_index,

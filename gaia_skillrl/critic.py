@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter, defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -236,8 +237,9 @@ class SkillCritic:
         if strategy in {"sharded", "family_sharded", "family-sharded"}:
             shards = self._make_shards(rows)
             write_json(log_dir / "critic_shards.json", shards)
-            shard_payloads: list[dict[str, Any]] = []
-            for shard in shards:
+            shard_payloads: list[dict[str, Any] | None] = [None] * len(shards)
+
+            def call_shard(index: int, shard: dict[str, Any]) -> tuple[int, dict[str, Any]]:
                 payload = self._call_critic(
                     mode="shard",
                     batch_rows=shard["rows"],
@@ -254,9 +256,43 @@ class SkillCritic:
                 payload = dict(payload)
                 payload["shard_id"] = shard["shard_id"]
                 payload["family"] = shard["family"]
-                shard_payloads.append(payload)
+                return index, payload
+
+            shard_concurrency_raw = str(
+                getattr(self.config.critic, "api_mode", "")
+            ).strip().lower()
+            env_concurrency = ""
+            try:
+                import os
+
+                env_concurrency = os.environ.get("NLRL_CRITIC_SHARD_CONCURRENCY", "").strip()
+            except Exception:
+                env_concurrency = ""
+            if env_concurrency:
+                shard_concurrency = int(env_concurrency)
+            elif shard_concurrency_raw in {"codex_cli", "codex-exec", "codex_exec"}:
+                shard_concurrency = len(shards)
+            else:
+                shard_concurrency = 1
+            shard_concurrency = max(1, min(shard_concurrency, len(shards) or 1))
+
+            if shard_concurrency <= 1:
+                for index, shard in enumerate(shards):
+                    payload_index, payload = call_shard(index, shard)
+                    shard_payloads[payload_index] = payload
+            else:
+                with ThreadPoolExecutor(max_workers=shard_concurrency, thread_name_prefix="critic-shard") as pool:
+                    futures = {
+                        pool.submit(call_shard, index, shard): index
+                        for index, shard in enumerate(shards)
+                    }
+                    for future in as_completed(futures):
+                        payload_index, payload = future.result()
+                        shard_payloads[payload_index] = payload
+
+            resolved_shard_payloads = [payload for payload in shard_payloads if payload is not None]
             payload = self._aggregate_shard_payloads(
-                shard_payloads=shard_payloads,
+                shard_payloads=resolved_shard_payloads,
                 rows=[row for shard in shards for row in shard["rows"]],
                 skill=skill,
                 history_poll=history_poll,
