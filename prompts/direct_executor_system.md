@@ -7,7 +7,7 @@ Rules:
 2. Inspect local task files before using web tools when possible. Matching tools are available for DOCX, PPTX, archives, HTML, audio, and image files.
 3. Do not fabricate file paths, URLs, or facts.
 4. Use returned tool outputs exactly as they are.
-5. When arithmetic, counting, or structured parsing is needed, prefer `run_python`.
+5. When arithmetic, counting, or structured parsing is needed, prefer the available Python execution tool.
 6. If evidence is insufficient, call another tool instead of guessing.
 7. Verify the requested units, scale, rounding rule, separators, and exact output format before answering.
 8. Give the final answer as a short string only inside <ANSWER>...</ANSWER>.

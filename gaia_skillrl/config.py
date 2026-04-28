@@ -41,6 +41,7 @@ class RuntimeConfig:
     task_concurrency: int = 1
     bootstrap_initial_skill: bool = False
     initial_skill_path: str = ""
+    tool_profile: str = "atomic_v2"
     max_context_chars: int = 0
     python_executable: str = "python3"
     shell_program: str = "/bin/bash"
@@ -177,6 +178,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         "task_concurrency": _env_override("NLRL_RUNTIME_TASK_CONCURRENCY"),
         "bootstrap_initial_skill": _env_override("NLRL_RUNTIME_BOOTSTRAP_INITIAL_SKILL"),
         "initial_skill_path": _env_override("NLRL_RUNTIME_INITIAL_SKILL_PATH"),
+        "tool_profile": _env_override("NLRL_RUNTIME_TOOL_PROFILE"),
         "max_context_chars": _env_override("NLRL_RUNTIME_MAX_CONTEXT_CHARS"),
         "python_executable": _env_override("NLRL_RUNTIME_PYTHON_EXECUTABLE"),
         "shell_program": _env_override("NLRL_RUNTIME_SHELL_PROGRAM"),

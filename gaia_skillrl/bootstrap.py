@@ -9,6 +9,7 @@ from .config import SystemConfig
 from .llm import OpenAICompatibleLLM, log_llm_call
 from .prompting import render_prompt
 from .schemas import DatasetTask, LLMMessage
+from .tools import available_tool_names_for_profile
 from .utils import ensure_dir, write_json
 
 
@@ -28,24 +29,8 @@ class SkillBootstrapper:
                 "phase_transition": "<NEXT>PHASE_NAME</NEXT>",
                 "final_answer": "<ANSWER>short final answer</ANSWER>",
             },
-            "available_tools": [
-                "list_dir",
-                "read_file",
-                "read_json_file",
-                "extract_pdf_text",
-                "read_table",
-                "image_metadata",
-                "audio_transcribe",
-                "ocr_image",
-                "image_qa",
-                "parse_docx",
-                "parse_pptx",
-                "extract_archive",
-                "web_search",
-                "fetch_url",
-                "html_extract",
-                "run_python",
-            ],
+            "tool_profile": self.config.runtime.tool_profile,
+            "available_tools": available_tool_names_for_profile(self.config.runtime.tool_profile),
             "environment_limits": [
                 "Browser automation is unavailable.",
                 "Task workspaces contain task.json and any materialized attachments.",

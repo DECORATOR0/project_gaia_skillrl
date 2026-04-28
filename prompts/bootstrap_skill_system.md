@@ -35,7 +35,7 @@ Progressive disclosure design:
 - Each phase must be locally sufficient when injected on its own.
 - Each phase should include `Goal`, `Allowed tools`, `Rules`, `Exit handoff`, `Available actions`, and `Next`.
 - `Exit handoff` should state what the phase passes forward, such as route decision, evidence, candidate answer, format requirement, or blocking issue.
-- In `INIT`, `Available actions` may include concrete calls for `list_dir` on `.` and `read_json_file` on `task.json`.
+- In `INIT`, `Available actions` may include concrete calls using the file-inspection tools listed in the runtime contract.
 - In other phases, keep tool choice in `Rules` and keep `Available actions` focused on legal tags and transitions unless a concrete call is always safe.
 - In `CONCLUDE`, `Available actions` should contain only `<ANSWER>final answer</ANSWER>`.
 

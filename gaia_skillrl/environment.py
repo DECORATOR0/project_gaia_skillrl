@@ -10,7 +10,7 @@ from .config import SystemConfig
 from .evaluation import evaluate_execution
 from .prompting import render_prompt
 from .schemas import DatasetTask, EnvRunResult, EnvState, PhaseTransition, SkillDetail, SkillPhase, to_dict
-from .tools import ToolContext, Toolbox
+from .tools import ToolContext, Toolbox, normalize_tool_profile
 from .utils import ensure_dir, write_json
 
 _DEFAULT_PHASES = {
@@ -286,6 +286,7 @@ def _build_tool_context(config: SystemConfig) -> ToolContext:
         shell_program=config.runtime.shell_program,
         search_results_limit=config.runtime.search_results_limit,
         web_fetch_char_limit=config.runtime.web_fetch_char_limit,
+        tool_profile=config.runtime.tool_profile,
         tool_api_base_url=os.environ.get("NLRL_TOOL_BASE_URL", "").strip() or config.executor.base_url,
         tool_api_key=os.environ.get("NLRL_TOOL_API_KEY", "").strip() or config.executor.api_key,
         tool_api_timeout_seconds=int(os.environ.get("NLRL_TOOL_TIMEOUT_SECONDS", "").strip() or config.executor.timeout_seconds),
@@ -319,16 +320,28 @@ class DirectEnvironment:
             ensure_ascii=False,
             indent=2,
         )
+        if normalize_tool_profile(self.config.runtime.tool_profile) == "reagent_facade_v3":
+            suggested = (
+                "- inspect `task.json` and local files first with `file_reader`\n"
+                "- use `file_reader` for local PDFs, tables, DOCX/PPTX, HTML, archives, JSON, and text\n"
+                "- use `image2text` for images and OCR, and `audio2text` for audio\n"
+                "- use `search` for web discovery and `browse` for reading a specific URL\n"
+                "- use `python` for arithmetic or structured parsing\n"
+                "- answer with the exact final short string only when the evidence is sufficient"
+            )
+        else:
+            suggested = (
+                "- inspect `task.json` and local files first\n"
+                "- matching tools are available for DOCX, PPTX, archives, HTML, audio, and image files when needed\n"
+                "- use web tools only when the task needs external evidence\n"
+                "- use `run_python` for arithmetic or structured parsing\n"
+                "- answer with the exact final short string only when the evidence is sufficient"
+            )
         return (
             f"## Task\n\n{task_info}\n\n"
             "## Run Mode\n\n"
             "No activated skill is provided in this run. Solve the task directly with the available tools.\n\n"
-            "Suggested approach:\n"
-            "- inspect `task.json` and local files first\n"
-            "- matching tools are available for DOCX, PPTX, archives, HTML, audio, and image files when needed\n"
-            "- use web tools only when the task needs external evidence\n"
-            "- use `run_python` for arithmetic or structured parsing\n"
-            "- answer with the exact final short string only when the evidence is sufficient"
+            f"Suggested approach:\n{suggested}"
         )
 
     def run(self, task: DatasetTask, run_dir: Path) -> EnvState:

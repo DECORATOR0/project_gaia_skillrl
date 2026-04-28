@@ -61,6 +61,55 @@ _WHISPER_LANGUAGE_ALIASES = {
     "ru": "ru",
 }
 
+ATOMIC_V2_TOOL_NAMES = [
+    "list_dir",
+    "read_file",
+    "read_json_file",
+    "extract_pdf_text",
+    "read_table",
+    "image_metadata",
+    "audio_transcribe",
+    "ocr_image",
+    "image_qa",
+    "parse_docx",
+    "parse_pptx",
+    "extract_archive",
+    "web_search",
+    "fetch_url",
+    "html_extract",
+    "run_python",
+]
+
+REAGENT_FACADE_V3_TOOL_NAMES = [
+    "search",
+    "browse",
+    "python",
+    "file_reader",
+    "image2text",
+    "audio2text",
+]
+
+_REAGENT_PROFILE_ALIASES = {
+    "reagent",
+    "reagent_facade",
+    "reagent_facade_v3",
+    "tool_v3",
+    "v3",
+}
+
+
+def normalize_tool_profile(profile: str | None) -> str:
+    cleaned = (profile or "atomic_v2").strip().lower()
+    if cleaned in _REAGENT_PROFILE_ALIASES:
+        return "reagent_facade_v3"
+    return "atomic_v2"
+
+
+def available_tool_names_for_profile(profile: str | None) -> list[str]:
+    if normalize_tool_profile(profile) == "reagent_facade_v3":
+        return list(REAGENT_FACADE_V3_TOOL_NAMES)
+    return list(ATOMIC_V2_TOOL_NAMES)
+
 
 def _join_non_empty(parts: list[str], *, separator: str = "\n") -> str:
     return separator.join(part for part in parts if part.strip())
@@ -161,6 +210,7 @@ class ToolContext:
     shell_program: str
     search_results_limit: int = 5
     web_fetch_char_limit: int = 6000
+    tool_profile: str = "atomic_v2"
     tool_api_base_url: str = ""
     tool_api_key: str = ""
     tool_api_timeout_seconds: int = 180
@@ -396,12 +446,119 @@ class Toolbox:
                 callable=self.run_python,
             )
         )
+        self._register_reagent_facade_tools()
+
+    def _register_reagent_facade_tools(self) -> None:
+        self._register(
+            ToolSpec(
+                name="search",
+                description="Search the web and return top result titles, URLs, and snippets. Accepts one query or a batch of queries.",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "queries": {"type": "array", "items": {"type": "string"}},
+                        "query": {"type": "string"},
+                        "top_k": {"type": "integer"},
+                    },
+                    "required": ["queries"],
+                },
+                callable=self.search,
+                source="reagent_facade_v3",
+            )
+        )
+        self._register(
+            ToolSpec(
+                name="browse",
+                description="Browse a webpage URL and extract readable content relevant to a query. Web PDFs are downloaded and parsed as text when possible.",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "url": {"type": "string"},
+                        "query": {"type": "string"},
+                        "max_chars": {"type": "integer"},
+                    },
+                    "required": ["url", "query"],
+                },
+                callable=self.browse,
+                source="reagent_facade_v3",
+            )
+        )
+        self._register(
+            ToolSpec(
+                name="python",
+                description="Execute a short Python code snippet for computation or structured parsing.",
+                parameters={
+                    "type": "object",
+                    "properties": {"code": {"type": "string"}, "input_json": {}},
+                    "required": ["code"],
+                },
+                callable=self.python_interpreter,
+                source="reagent_facade_v3",
+            )
+        )
+        self._register(
+            ToolSpec(
+                name="file_reader",
+                description="Read and extract content from local files. Supports directories, txt, md, json, jsonl, csv, xlsx, pdf, docx, pptx, html, archives, py, and pdb files.",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "file_path": {"type": "string"},
+                        "path": {"type": "string"},
+                        "max_pages": {"type": "integer"},
+                        "max_rows": {"type": "integer"},
+                        "max_chars": {"type": "integer"},
+                        "output_dir": {"type": "string"},
+                    },
+                    "required": ["file_path"],
+                },
+                callable=self.file_reader,
+                source="reagent_facade_v3",
+            )
+        )
+        self._register(
+            ToolSpec(
+                name="image2text",
+                description="Analyze a local image for image description, visual question answering, and OCR.",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "image_path": {"type": "string"},
+                        "path": {"type": "string"},
+                        "query": {"type": "string"},
+                        "language": {"type": "string"},
+                    },
+                    "required": ["image_path", "query"],
+                },
+                callable=self.image2text,
+                source="reagent_facade_v3",
+            )
+        )
+        self._register(
+            ToolSpec(
+                name="audio2text",
+                description="Transcribe a local audio attachment into text.",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "audio_path": {"type": "string"},
+                        "path": {"type": "string"},
+                        "language": {"type": "string"},
+                        "return_segments": {"type": "boolean"},
+                    },
+                    "required": ["audio_path"],
+                },
+                callable=self.audio2text,
+                source="reagent_facade_v3",
+            )
+        )
 
     def specs(self, allowed_tools: list[str] | None = None) -> list[ToolSpec]:
+        public_names = available_tool_names_for_profile(self.context.tool_profile)
         if not allowed_tools:
-            return [self._registry[name] for name in sorted(self._registry)]
+            return [self._registry[name] for name in public_names if name in self._registry]
         allowed = set(allowed_tools)
-        return [spec for name, spec in sorted(self._registry.items()) if name in allowed]
+        return [self._registry[name] for name in public_names if name in allowed and name in self._registry]
 
     def tool_prompt(self, allowed_tools: list[str] | None = None) -> str:
         return "\n".join(spec.prompt_entry() for spec in self.specs(allowed_tools))
@@ -409,7 +566,374 @@ class Toolbox:
     def execute(self, tool_name: str, arguments: dict[str, Any]) -> Any:
         if tool_name not in self._registry:
             raise KeyError(f"Unknown tool: {tool_name}")
+        public_names = set(available_tool_names_for_profile(self.context.tool_profile))
+        if tool_name not in public_names:
+            visible = ", ".join(available_tool_names_for_profile(self.context.tool_profile))
+            raise KeyError(f"Tool `{tool_name}` is not available in tool profile `{self.context.tool_profile}`. Available tools: {visible}")
         return self._registry[tool_name].callable(**arguments)
+
+    def _facade_char_limit(self, max_chars: int | None = None) -> int:
+        if max_chars is not None and max_chars > 0:
+            return max_chars
+        raw = os.environ.get("NLRL_FACADE_MAX_CHARS", "").strip()
+        if raw.isdigit() and int(raw) > 0:
+            return int(raw)
+        return 30000
+
+    @staticmethod
+    def _truncate_text(text: str, limit: int) -> str:
+        if len(text) <= limit:
+            return text
+        return text[:limit] + f"\n... (truncated, original length: {len(text)} chars)"
+
+    def _facade_result(
+        self,
+        *,
+        facade: str,
+        subtool: str,
+        content: Any,
+        metadata: dict[str, Any] | None = None,
+        warnings: list[str] | None = None,
+        max_chars: int | None = None,
+    ) -> dict[str, Any]:
+        limit = self._facade_char_limit(max_chars)
+        content_text = content if isinstance(content, str) else json.dumps(content, ensure_ascii=False)
+        return {
+            "ok": True,
+            "facade": facade,
+            "subtool": subtool,
+            "content": self._truncate_text(content_text, limit),
+            "metadata": metadata or {},
+            "warnings": warnings or [],
+        }
+
+    def search(
+        self,
+        queries: list[str] | str | None = None,
+        query: str | None = None,
+        top_k: int | None = None,
+    ) -> dict[str, Any]:
+        raw_queries: list[str]
+        if isinstance(queries, list):
+            raw_queries = [str(item).strip() for item in queries if str(item).strip()]
+        elif isinstance(queries, str) and queries.strip():
+            raw_queries = [queries.strip()]
+        elif query and query.strip():
+            raw_queries = [query.strip()]
+        else:
+            raise ValueError("Provide `queries` or `query`.")
+        limit = top_k or self.context.search_results_limit
+        batches = []
+        for item in raw_queries:
+            batches.append({"query": item, "results": self.web_search(item, max_results=limit)})
+        return {
+            "ok": True,
+            "facade": "search",
+            "subtool": "web_search",
+            "queries": raw_queries,
+            "results": batches,
+        }
+
+    def browse(self, url: str, query: str = "", max_chars: int | None = None) -> dict[str, Any]:
+        limit = max_chars or self.context.web_fetch_char_limit
+        response = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+        response.raise_for_status()
+        content_type = response.headers.get("content-type", "")
+        url_path = urlparse(url).path.lower()
+        if "pdf" in content_type.lower() or url_path.endswith(".pdf"):
+            ensure_dir(self.context.temp_root / "web_downloads")
+            suffix = Path(url_path).suffix or ".pdf"
+            fd, tmp_name = tempfile.mkstemp(suffix=suffix, dir=self.context.temp_root / "web_downloads")
+            os.close(fd)
+            tmp_path = Path(tmp_name)
+            try:
+                tmp_path.write_bytes(response.content)
+                pdf_result = self.extract_pdf_text(str(tmp_path), max_pages=50)
+                metadata = {
+                    "url": url,
+                    "query": query,
+                    "content_type": content_type,
+                    "status_code": response.status_code,
+                    "downloaded_path": str(tmp_path),
+                    "page_count": pdf_result.get("page_count"),
+                    "pages_read": pdf_result.get("pages_read"),
+                }
+                return self._facade_result(
+                    facade="browse",
+                    subtool="fetch_url+extract_pdf_text",
+                    content=pdf_result.get("text", ""),
+                    metadata=metadata,
+                    max_chars=limit,
+                )
+            finally:
+                try:
+                    tmp_path.unlink()
+                except OSError:
+                    pass
+        if "html" in content_type.lower() or not content_type:
+            extracted = self.html_extract(url=url, max_chars=limit)
+            metadata = {
+                "url": url,
+                "query": query,
+                "content_type": content_type,
+                "status_code": response.status_code,
+                **extracted.get("metadata", {}),
+            }
+            return self._facade_result(
+                facade="browse",
+                subtool="html_extract",
+                content=extracted.get("content", ""),
+                metadata=metadata,
+                warnings=extracted.get("warnings", []),
+                max_chars=limit,
+            )
+        text = response.text
+        return self._facade_result(
+            facade="browse",
+            subtool="fetch_url",
+            content=text,
+            metadata={
+                "url": url,
+                "query": query,
+                "content_type": content_type,
+                "status_code": response.status_code,
+            },
+            max_chars=limit,
+        )
+
+    def python_interpreter(self, code: str, input_json: Any | None = None) -> dict[str, Any]:
+        result = self.run_python(code=code, input_json=input_json)
+        return {
+            "ok": result.get("returncode") == 0,
+            "facade": "python",
+            "subtool": "run_python",
+            "content": result.get("stdout", ""),
+            "metadata": result,
+            "warnings": [result.get("stderr", "")] if result.get("stderr") else [],
+        }
+
+    def _file_reader_archive_member(
+        self,
+        file_path: str,
+        *,
+        max_pages: int,
+        max_rows: int,
+        max_chars: int | None,
+    ) -> dict[str, Any]:
+        archive_ref, inner = file_path.split("::", 1)
+        archive_path = self._resolve_workspace_path(archive_ref)
+        if archive_path.suffix.lower() != ".zip":
+            raise ValueError("Archive member reads currently support ZIP paths only.")
+        with zipfile.ZipFile(archive_path) as archive:
+            if inner not in archive.namelist():
+                raise FileNotFoundError(f"Archive member not found: {inner}")
+            data = archive.read(inner)
+        suffix = Path(inner).suffix or ".txt"
+        ensure_dir(self.context.temp_root / "archive_members")
+        fd, tmp_name = tempfile.mkstemp(suffix=suffix, dir=self.context.temp_root / "archive_members")
+        os.close(fd)
+        tmp_path = Path(tmp_name)
+        try:
+            tmp_path.write_bytes(data)
+            result = self.file_reader(
+                file_path=str(tmp_path),
+                max_pages=max_pages,
+                max_rows=max_rows,
+                max_chars=max_chars,
+            )
+            result["metadata"] = {
+                **result.get("metadata", {}),
+                "archive_path": str(archive_path),
+                "internal_path": inner,
+            }
+            return result
+        finally:
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
+
+    def file_reader(
+        self,
+        file_path: str | None = None,
+        path: str | None = None,
+        max_pages: int | None = None,
+        max_rows: int | None = None,
+        max_chars: int | None = None,
+        output_dir: str | None = None,
+    ) -> dict[str, Any]:
+        file_ref = (file_path or path or "").strip()
+        if not file_ref:
+            raise ValueError("Provide `file_path`.")
+        page_limit = max_pages or 50
+        row_limit = max_rows or 50
+        if "::" in file_ref:
+            return self._file_reader_archive_member(
+                file_ref,
+                max_pages=page_limit,
+                max_rows=row_limit,
+                max_chars=max_chars,
+            )
+        target = self._resolve_workspace_path(file_ref)
+        if target.is_dir():
+            entries = self.list_dir(str(target))
+            return self._facade_result(
+                facade="file_reader",
+                subtool="list_dir",
+                content="\n".join(entries),
+                metadata={"path": str(target), "entry_count": len(entries)},
+                max_chars=max_chars,
+            )
+        suffix = target.suffix.lower()
+        image_suffixes = {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".tif", ".tiff"}
+        audio_suffixes = {".mp3", ".wav", ".m4a", ".flac", ".ogg", ".aac"}
+        if suffix in image_suffixes:
+            return {
+                "ok": False,
+                "facade": "file_reader",
+                "subtool": "none",
+                "content": "",
+                "metadata": {"path": str(target), "file_extension": suffix},
+                "warnings": ["This is an image file. Use image2text for visual or OCR evidence."],
+            }
+        if suffix in audio_suffixes:
+            return {
+                "ok": False,
+                "facade": "file_reader",
+                "subtool": "none",
+                "content": "",
+                "metadata": {"path": str(target), "file_extension": suffix},
+                "warnings": ["This is an audio file. Use audio2text for transcription."],
+            }
+        if suffix == ".pdf":
+            result = self.extract_pdf_text(str(target), max_pages=page_limit)
+            return self._facade_result(
+                facade="file_reader",
+                subtool="extract_pdf_text",
+                content=result.get("text", ""),
+                metadata={key: value for key, value in result.items() if key != "text"},
+                max_chars=max_chars,
+            )
+        if suffix in {".csv", ".xlsx", ".xlsm", ".xls"}:
+            result = self.read_table(str(target), max_rows=row_limit)
+            return self._facade_result(
+                facade="file_reader",
+                subtool="read_table",
+                content=result,
+                metadata={"path": str(target), "file_extension": suffix},
+                max_chars=max_chars,
+            )
+        if suffix in {".json", ".jsonld"}:
+            result = self.read_json_file(str(target))
+            return self._facade_result(
+                facade="file_reader",
+                subtool="read_json_file",
+                content=result,
+                metadata={"path": str(target), "file_extension": suffix},
+                max_chars=max_chars,
+            )
+        if suffix == ".docx":
+            result = self.parse_docx(str(target))
+            return self._facade_result(
+                facade="file_reader",
+                subtool="parse_docx",
+                content=result.get("content", ""),
+                metadata={**result.get("metadata", {}), "path": str(target), "file_extension": suffix},
+                warnings=result.get("warnings", []),
+                max_chars=max_chars,
+            )
+        if suffix == ".pptx":
+            result = self.parse_pptx(str(target))
+            return self._facade_result(
+                facade="file_reader",
+                subtool="parse_pptx",
+                content=result.get("content", ""),
+                metadata={**result.get("metadata", {}), "path": str(target), "file_extension": suffix},
+                warnings=result.get("warnings", []),
+                max_chars=max_chars,
+            )
+        if suffix in {".zip", ".tar", ".gz", ".bz2", ".xz"} or target.name.endswith((".tar.gz", ".tar.bz2", ".tar.xz")):
+            result = self.extract_archive(str(target), output_dir=output_dir, list_limit=100)
+            return self._facade_result(
+                facade="file_reader",
+                subtool="extract_archive",
+                content=result.get("content", ""),
+                metadata={**result.get("metadata", {}), "path": str(target), "file_extension": suffix},
+                warnings=result.get("warnings", []),
+                max_chars=max_chars,
+            )
+        if suffix in {".html", ".htm"}:
+            result = self.html_extract(path=str(target), max_chars=max_chars)
+            return self._facade_result(
+                facade="file_reader",
+                subtool="html_extract",
+                content=result.get("content", ""),
+                metadata={**result.get("metadata", {}), "path": str(target), "file_extension": suffix},
+                warnings=result.get("warnings", []),
+                max_chars=max_chars,
+            )
+        text = self.read_file(str(target))
+        return self._facade_result(
+            facade="file_reader",
+            subtool="read_file",
+            content=text,
+            metadata={"path": str(target), "file_extension": suffix},
+            max_chars=max_chars,
+        )
+
+    def image2text(
+        self,
+        image_path: str | None = None,
+        path: str | None = None,
+        query: str | None = None,
+        language: str | None = None,
+    ) -> dict[str, Any]:
+        image_ref = (image_path or path or "").strip()
+        if not image_ref:
+            raise ValueError("Provide `image_path`.")
+        metadata = self.image_metadata(image_ref)
+        ocr_result = self.ocr_image(image_ref, language=language)
+        content_parts = []
+        if ocr_result.get("content"):
+            content_parts.append("OCR text:\n" + str(ocr_result.get("content", "")).strip())
+        qa_payload: dict[str, Any] | None = None
+        if query and query.strip():
+            qa_payload = self.image_qa(image_ref, question=query.strip())
+            if qa_payload.get("content"):
+                content_parts.append("Visual answer:\n" + str(qa_payload.get("content", "")).strip())
+        content = "\n\n".join(content_parts).strip()
+        return {
+            "ok": True,
+            "facade": "image2text",
+            "subtool": "image_metadata+ocr_image" + ("+image_qa" if qa_payload else ""),
+            "content": content,
+            "metadata": {
+                "image": metadata,
+                "ocr": {key: value for key, value in ocr_result.items() if key != "content"},
+                "image_qa": {key: value for key, value in (qa_payload or {}).items() if key != "content"},
+            },
+            "warnings": [*ocr_result.get("warnings", []), *((qa_payload or {}).get("warnings", []))],
+        }
+
+    def audio2text(
+        self,
+        audio_path: str | None = None,
+        path: str | None = None,
+        language: str | None = None,
+        return_segments: bool = False,
+    ) -> dict[str, Any]:
+        audio_ref = (audio_path or path or "").strip()
+        if not audio_ref:
+            raise ValueError("Provide `audio_path`.")
+        result = self.audio_transcribe(audio_ref, language=language, return_segments=return_segments)
+        return {
+            "ok": True,
+            "facade": "audio2text",
+            "subtool": "audio_transcribe",
+            "content": result.get("content", ""),
+            "metadata": {key: value for key, value in result.items() if key != "content"},
+            "warnings": result.get("warnings", []),
+        }
 
     def list_dir(self, path: str = ".") -> list[str]:
         target = self._resolve_workspace_path(path)

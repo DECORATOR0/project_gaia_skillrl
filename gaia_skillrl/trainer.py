@@ -20,6 +20,7 @@ from .skills import (
     reset_skill_library,
     write_skill_bundle,
 )
+from .tools import normalize_tool_profile
 from .utils import append_jsonl, ensure_dir, prepare_dated_run_dir, utc_timestamp, write_json
 
 _DEFAULT_SKILL_FILES = {
@@ -105,6 +106,80 @@ Instructions:
 """,
 }
 
+_REAGENT_FACADE_SKILL_FILES = {
+    "SKILL.md": """---
+name: gaia-general-skill
+description: Phase-based GAIA execution skill for the Reagent-style six-tool facade.
+allowed-tools:
+  - search
+  - browse
+  - python
+  - file_reader
+  - image2text
+  - audio2text
+metadata:
+  benchmark: GAIA
+  version: "0.1-tool-v3"
+  tool_profile: reagent_facade_v3
+---
+
+## Phase: INIT
+
+Goal: inspect the task directory and task manifest before doing anything else.
+
+Instructions:
+- Use `file_reader` on `.` or `task.json` to inspect the local task layout.
+- If an attachment exists, note its exact filename.
+- Do not answer in this phase.
+- Do not jump directly to `ANALYZE` or `CONCLUDE`.
+- After you understand the local task layout, move to `GATHER`.
+
+## Phase: GATHER
+
+Goal: collect evidence from the task attachment first, then from the web only if needed.
+
+Instructions:
+- Prefer local files before web search.
+- Use `file_reader` for local text, JSON, PDF, CSV/XLSX, DOCX, PPTX, HTML, archives, Python, and PDB files.
+- Use `image2text` for images and OCR.
+- Use `audio2text` for audio transcription.
+- Use `search` to find relevant URLs and `browse` to read a specific webpage.
+- Do not guess filenames or URLs.
+- Do not answer in this phase.
+- Move to `ANALYZE` once the relevant evidence has been collected.
+
+## Phase: ANALYZE
+
+Goal: convert evidence into the exact short answer.
+
+Instructions:
+- Use `python` for arithmetic, counting, sorting, and normalization.
+- Keep track of the exact answer string you plan to output.
+- Explicitly identify the requested final units, scale, rounding, and format before finalizing.
+- If the evidence is insufficient, gather more evidence instead of guessing.
+- Do not answer in this phase.
+- Move to `CONCLUDE` only when you can state the final short answer exactly.
+
+## Phase: CONCLUDE
+
+Goal: return the final answer only.
+
+Instructions:
+- Do one final check that the answer matches the prompt's requested units, scale, rounding, separators, and exact output format.
+- Output `<ANSWER>your final answer</ANSWER>`.
+- The answer should be short and exact.
+- Do not add explanation inside the answer tag.
+""",
+    "references/GAIA_EXECUTION_NOTES.md": """# GAIA Execution Notes
+
+- Read `task.json` before opening attachments.
+- Prefer attachment evidence before external search.
+- Use `file_reader` as the local-file entry point.
+- Use `python` whenever arithmetic or deterministic parsing is involved.
+- Return a short final answer string without extra formatting.
+""",
+}
+
 
 class GaiaSkillTrainer:
     def __init__(self, config: SystemConfig):
@@ -148,7 +223,12 @@ class GaiaSkillTrainer:
 
     def _write_default_skill(self, config: SystemConfig) -> Path:
         reset_skill_library(config.skill_library_root)
-        return write_skill_bundle(config.skill_library_root, "gaia-general-skill", _DEFAULT_SKILL_FILES)
+        files = (
+            _REAGENT_FACADE_SKILL_FILES
+            if normalize_tool_profile(config.runtime.tool_profile) == "reagent_facade_v3"
+            else _DEFAULT_SKILL_FILES
+        )
+        return write_skill_bundle(config.skill_library_root, "gaia-general-skill", files)
 
     def _initialize_skill_library(
         self,

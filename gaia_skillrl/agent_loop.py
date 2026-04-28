@@ -42,6 +42,24 @@ class ParsedAction:
     raw_text: str = ""
 
 
+def _parse_tool_args(raw_args: str) -> dict:
+    candidates = [raw_args.strip()]
+    if candidates[0].endswith(">"):
+        candidates.append(candidates[0].rstrip(" \t\r\n>"))
+    if "{" in candidates[0] and "}" in candidates[0]:
+        candidates.append(candidates[0][candidates[0].find("{") : candidates[0].rfind("}") + 1])
+
+    for candidate in candidates:
+        try:
+            parsed = json.loads(candidate)
+        except (json.JSONDecodeError, ValueError):
+            continue
+        if isinstance(parsed, dict):
+            return parsed
+        return {}
+    return {"_raw": raw_args}
+
+
 def parse_executor_tags(text: str) -> ParsedAction:
     """Parse tag-based executor output into a structured action."""
     result = ParsedAction(raw_text=text)
@@ -63,12 +81,7 @@ def parse_executor_tags(text: str) -> ParsedAction:
         result.action_type = "call"
         result.tool_name = tags["CALL"].strip()
         raw_args = tags.get("ARGS", "{}")
-        try:
-            result.tool_args = json.loads(raw_args)
-            if not isinstance(result.tool_args, dict):
-                result.tool_args = {}
-        except (json.JSONDecodeError, ValueError):
-            result.tool_args = {"_raw": raw_args}
+        result.tool_args = _parse_tool_args(raw_args)
         return result
 
     if "NEXT" in tags:
