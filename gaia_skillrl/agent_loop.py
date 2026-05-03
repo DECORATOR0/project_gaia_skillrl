@@ -12,9 +12,6 @@ from .schemas import ExecutorStepRecord, LLMMessage, PhaseTransition, SkillPhase
 from .tools import Toolbox
 
 _TRUNCATION_MARKER = "\n\n[truncated]\n"
-_OLDER_MESSAGE_LIMIT = 1600
-_MIN_MESSAGE_LIMIT = 600
-_RECENT_TOOL_RESULTS_TO_KEEP = 3
 _SEMANTIC_FAILURE_MARKERS = (
     "failed to call model",
     "unknown mode",
@@ -154,14 +151,6 @@ def _extract_semantic_failure(value: object) -> str:
     return ""
 
 
-def _tool_result_indexes(messages: list[LLMMessage]) -> list[int]:
-    return [
-        idx
-        for idx, message in enumerate(messages)
-        if idx >= 2 and message.role == "user" and message.content.startswith("Tool result")
-    ]
-
-
 def _fit_messages_to_budget(messages: list[LLMMessage], max_chars: int) -> list[LLMMessage]:
     if max_chars <= 0 or not messages:
         return messages
@@ -194,31 +183,7 @@ def _fit_messages_to_budget(messages: list[LLMMessage], max_chars: int) -> list[
 
 
 def _prepare_messages_for_call(messages: list[LLMMessage], max_context_chars: int) -> list[LLMMessage]:
-    if max_context_chars <= 0:
-        return messages
-    if len(messages) <= 2:
-        return _fit_messages_to_budget(messages, max_context_chars)
-
-    recent_tool_results = set(_tool_result_indexes(messages)[-_RECENT_TOOL_RESULTS_TO_KEEP:])
-    prepared: list[LLMMessage] = []
-    for idx, message in enumerate(messages):
-        content = message.content
-        if idx >= 2 and idx not in recent_tool_results:
-            content = _truncate_text(content, _OLDER_MESSAGE_LIMIT)
-        prepared.append(LLMMessage(role=message.role, content=content))
-    prepared = _fit_messages_to_budget(prepared, max_context_chars)
-
-    total_chars = sum(len(message.content) for message in prepared)
-    if total_chars <= max_context_chars:
-        return prepared
-
-    tightened: list[LLMMessage] = []
-    for idx, message in enumerate(prepared):
-        content = message.content
-        if idx >= 2:
-            content = _truncate_text(content, _MIN_MESSAGE_LIMIT)
-        tightened.append(LLMMessage(role=message.role, content=content))
-    return _fit_messages_to_budget(tightened, max_context_chars)
+    return _fit_messages_to_budget(messages, max_context_chars)
 
 
 def _format_allowed_next(allowed_next: list[str]) -> str:
