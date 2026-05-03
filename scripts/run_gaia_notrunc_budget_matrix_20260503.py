@@ -281,11 +281,6 @@ def stop_pid(pid: int, status: str) -> None:
 
 def vllm_cmd(lane: Lane) -> list[str]:
     return [
-        "nohup",
-        "setsid",
-        "env",
-        f"CUDA_VISIBLE_DEVICES={lane.gpu}",
-        "PYTHONUNBUFFERED=1",
         str(VLLM_PYTHON),
         "-u",
         "-m",
@@ -330,10 +325,14 @@ def start_or_reuse_vllm(lane: Lane) -> int | None:
     LAUNCH_LOG_ROOT.mkdir(parents=True, exist_ok=True)
     log_path = LAUNCH_LOG_ROOT / f"{QUEUE_NAME}_{lane.name}_vllm_p{lane.port}.log"
     cmd = vllm_cmd(lane)
+    env = os.environ.copy()
+    env["CUDA_VISIBLE_DEVICES"] = str(lane.gpu)
+    env["PYTHONUNBUFFERED"] = "1"
     handle = log_path.open("w", encoding="utf-8")
     process = subprocess.Popen(
         cmd,
         cwd=str(ROOT),
+        env=env,
         stdout=handle,
         stderr=subprocess.STDOUT,
         text=True,
@@ -346,7 +345,7 @@ def start_or_reuse_vllm(lane: Lane) -> int | None:
         pid=process.pid,
         cwd=ROOT,
         run_dir=lane.model_path,
-        command=shell_join(cmd) + f" > {shlex.quote(str(log_path))} 2>&1 < /dev/null",
+        command=shell_join(["env", f"CUDA_VISIBLE_DEVICES={lane.gpu}", "PYTHONUNBUFFERED=1", *cmd]) + f" > {shlex.quote(str(log_path))} 2>&1 < /dev/null",
         notes=f"Matrix vLLM service; lane={lane.name}; model={lane.served_name}; max_model_len={lane.max_model_len}; gpu_memory_utilization=0.9.",
         log_path=log_path,
     )
@@ -404,39 +403,74 @@ def run_dir_for(run_name: str) -> Path:
     return RUN_ROOT / str(current.year) / str(current.month) / f"{current.year}-{current.month}-{current.day}" / run_name
 
 
-def experiment_cmd(job: Job, lane: Lane, run_name: str) -> list[str]:
-    env_parts = [
-        "PYTHONUNBUFFERED=1",
-        "PYTHONFAULTHANDLER=1",
-        f"GAIA_SEARCH_RUNTIME_CONFIG={SEARCH_CONFIG}",
-        f"NLRL_RUNTIME_TASK_CONCURRENCY={CONCURRENCY}",
-        f"NLRL_LLM_MAX_CONCURRENT_REQUESTS={CONCURRENCY}",
-        "NLRL_RUNTIME_TOOL_PROFILE=atomic_v2",
-        f"NLRL_RUNTIME_MAX_CONTEXT_CHARS={job.max_context_chars}",
-        f"NLRL_EXECUTOR_MODEL={lane.served_name}",
-        f"NLRL_EXECUTOR_BASE_URL={lane.base_url}",
-        "NLRL_EXECUTOR_API_KEY=EMPTY",
-        "NLRL_EXECUTOR_API_MODE=chat_completions",
-        "NLRL_EXECUTOR_STREAM=1",
-        "NLRL_EXECUTOR_ENABLE_THINKING=1",
-        "NLRL_EXECUTOR_TEMPERATURE=0.1",
-        "NLRL_EXECUTOR_TIMEOUT_SECONDS=1200",
-        "NLRL_LLM_STREAM_WALL_TIMEOUT_SECONDS=1200",
-        "NLRL_EXECUTOR_STREAM_INCLUDE_USAGE=1",
-    ]
+def experiment_env(job: Job, lane: Lane) -> dict[str, str]:
+    env = os.environ.copy()
+    env.pop("ALL_PROXY", None)
+    env.pop("all_proxy", None)
+    env.update({
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONFAULTHANDLER": "1",
+        "GAIA_SEARCH_RUNTIME_CONFIG": str(SEARCH_CONFIG),
+        "NLRL_RUNTIME_TASK_CONCURRENCY": str(CONCURRENCY),
+        "NLRL_LLM_MAX_CONCURRENT_REQUESTS": str(CONCURRENCY),
+        "NLRL_RUNTIME_TOOL_PROFILE": "atomic_v2",
+        "NLRL_RUNTIME_MAX_CONTEXT_CHARS": str(job.max_context_chars),
+        "NLRL_EXECUTOR_MODEL": lane.served_name,
+        "NLRL_EXECUTOR_BASE_URL": lane.base_url,
+        "NLRL_EXECUTOR_API_KEY": "EMPTY",
+        "NLRL_EXECUTOR_API_MODE": "chat_completions",
+        "NLRL_EXECUTOR_STREAM": "1",
+        "NLRL_EXECUTOR_ENABLE_THINKING": "1",
+        "NLRL_EXECUTOR_TEMPERATURE": "0.1",
+        "NLRL_EXECUTOR_TIMEOUT_SECONDS": "1200",
+        "NLRL_LLM_STREAM_WALL_TIMEOUT_SECONDS": "1200",
+        "NLRL_EXECUTOR_STREAM_INCLUDE_USAGE": "1",
+    })
     if job.thinking_token_budget is not None:
-        env_parts.append(f"NLRL_EXECUTOR_THINKING_TOKEN_BUDGET={job.thinking_token_budget}")
+        env["NLRL_EXECUTOR_THINKING_TOKEN_BUDGET"] = str(job.thinking_token_budget)
+    else:
+        env.pop("NLRL_EXECUTOR_THINKING_TOKEN_BUDGET", None)
+        env.pop("NLRL_EXECUTOR_THINKING_BUDGET", None)
     if job.max_tokens is not None:
-        env_parts.append(f"NLRL_EXECUTOR_MAX_TOKENS={job.max_tokens}")
+        env["NLRL_EXECUTOR_MAX_TOKENS"] = str(job.max_tokens)
+    else:
+        env.pop("NLRL_EXECUTOR_MAX_TOKENS", None)
+    return env
+
+
+def experiment_env_display(env: dict[str, str]) -> list[str]:
+    keys = [
+        "PYTHONUNBUFFERED=1",
+        "PYTHONFAULTHANDLER",
+        "GAIA_SEARCH_RUNTIME_CONFIG",
+        "NLRL_RUNTIME_TASK_CONCURRENCY",
+        "NLRL_LLM_MAX_CONCURRENT_REQUESTS",
+        "NLRL_RUNTIME_TOOL_PROFILE",
+        "NLRL_RUNTIME_MAX_CONTEXT_CHARS",
+        "NLRL_EXECUTOR_MODEL",
+        "NLRL_EXECUTOR_BASE_URL",
+        "NLRL_EXECUTOR_API_KEY",
+        "NLRL_EXECUTOR_API_MODE",
+        "NLRL_EXECUTOR_STREAM",
+        "NLRL_EXECUTOR_ENABLE_THINKING",
+        "NLRL_EXECUTOR_THINKING_TOKEN_BUDGET",
+        "NLRL_EXECUTOR_TEMPERATURE",
+        "NLRL_EXECUTOR_TIMEOUT_SECONDS",
+        "NLRL_LLM_STREAM_WALL_TIMEOUT_SECONDS",
+        "NLRL_EXECUTOR_STREAM_INCLUDE_USAGE",
+        "NLRL_EXECUTOR_MAX_TOKENS",
+    ]
+    parts: list[str] = []
+    for key in keys:
+        if "=" in key:
+            parts.append(key)
+        elif key in env:
+            parts.append(f"{key}={env[key]}")
+    return parts
+
+
+def experiment_cmd(run_name: str) -> list[str]:
     return [
-        "nohup",
-        "setsid",
-        "env",
-        "-u",
-        "ALL_PROXY",
-        "-u",
-        "all_proxy",
-        *env_parts,
         str(PYTHON),
         "-m",
         "gaia_skillrl.cli",
@@ -472,12 +506,14 @@ def launch_experiment(job: Job, lane: Lane) -> tuple[subprocess.Popen[str], Path
     run_name = run_name_for(job, lane)
     run_dir = run_dir_for(run_name)
     log_path = LAUNCH_LOG_ROOT / f"{run_name}.log"
-    cmd = experiment_cmd(job, lane, run_name)
+    cmd = experiment_cmd(run_name)
+    env = experiment_env(job, lane)
     LAUNCH_LOG_ROOT.mkdir(parents=True, exist_ok=True)
     handle = log_path.open("w", encoding="utf-8")
     process = subprocess.Popen(
         cmd,
         cwd=str(ROOT),
+        env=env,
         stdout=handle,
         stderr=subprocess.STDOUT,
         text=True,
@@ -490,7 +526,7 @@ def launch_experiment(job: Job, lane: Lane) -> tuple[subprocess.Popen[str], Path
         pid=process.pid,
         cwd=ROOT,
         run_dir=str(run_dir),
-        command=shell_join(cmd) + f" > {shlex.quote(str(log_path))} 2>&1 < /dev/null",
+        command=shell_join(["env", "-u", "ALL_PROXY", "-u", "all_proxy", *experiment_env_display(env), *cmd]) + f" > {shlex.quote(str(log_path))} 2>&1 < /dev/null",
         notes=(
             f"GAIA no-old-message-pretruncate matrix job; lane={lane.name}; model={lane.served_name}; "
             f"input_cap={job.input_cap}; max_context_chars={job.max_context_chars}; "
