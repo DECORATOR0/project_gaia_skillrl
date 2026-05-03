@@ -425,6 +425,11 @@ def experiment_env(job: Job, lane: Lane) -> dict[str, str]:
         "NLRL_EXECUTOR_TIMEOUT_SECONDS": "1200",
         "NLRL_LLM_STREAM_WALL_TIMEOUT_SECONDS": "1200",
         "NLRL_EXECUTOR_STREAM_INCLUDE_USAGE": "1",
+        "NLRL_TOOL_BASE_URL": "http://35.220.164.252:3888/v1",
+        "NLRL_TOOL_API_KEY": "sk-JhritIDG3G8QxS6pPJ1kIfqxWorzSAZgHgkLz4EA0RgFl9lQ",
+        "NLRL_TOOL_TIMEOUT_SECONDS": "1200",
+        "NLRL_TOOL_MODEL": "gpt-4o-mini",
+        "NLRL_TOOL_AUDIO_MODEL": "gpt-4o-mini-transcribe",
     })
     if job.thinking_token_budget is not None:
         env["NLRL_EXECUTOR_THINKING_TOKEN_BUDGET"] = str(job.thinking_token_budget)
@@ -459,6 +464,11 @@ def experiment_env_display(env: dict[str, str]) -> list[str]:
         "NLRL_LLM_STREAM_WALL_TIMEOUT_SECONDS",
         "NLRL_EXECUTOR_STREAM_INCLUDE_USAGE",
         "NLRL_EXECUTOR_MAX_TOKENS",
+        "NLRL_TOOL_BASE_URL",
+        "NLRL_TOOL_API_KEY",
+        "NLRL_TOOL_TIMEOUT_SECONDS",
+        "NLRL_TOOL_MODEL",
+        "NLRL_TOOL_AUDIO_MODEL",
     ]
     parts: list[str] = []
     for key in keys:
