@@ -43,6 +43,7 @@ class Lane:
     model_label: str
     model_path: str
     served_name: str
+    max_model_len: int
 
     @property
     def base_url(self) -> str:
@@ -75,10 +76,10 @@ class Job:
 
 
 LANES = [
-    Lane("gpu0_8b", 0, 8100, "8b", "/data/xsy/codes/checkpoints/Qwen3-8B", "Qwen3-8B-local"),
-    Lane("gpu2_8b", 2, 8102, "8b", "/data/xsy/codes/checkpoints/Qwen3-8B", "Qwen3-8B-local"),
-    Lane("gpu1_9b", 1, 8101, "9b", "/data/xsy/codes/checkpoints/Qwen3.5-9B", "Qwen3.5-9B-local"),
-    Lane("gpu3_9b", 3, 8103, "9b", "/data/xsy/codes/checkpoints/Qwen3.5-9B", "Qwen3.5-9B-local"),
+    Lane("gpu0_8b", 0, 8100, "8b", "/data/xsy/codes/checkpoints/Qwen3-8B", "Qwen3-8B-local", 40960),
+    Lane("gpu2_8b", 2, 8102, "8b", "/data/xsy/codes/checkpoints/Qwen3-8B", "Qwen3-8B-local", 40960),
+    Lane("gpu1_9b", 1, 8101, "9b", "/data/xsy/codes/checkpoints/Qwen3.5-9B", "Qwen3.5-9B-local", 49152),
+    Lane("gpu3_9b", 3, 8103, "9b", "/data/xsy/codes/checkpoints/Qwen3.5-9B", "Qwen3.5-9B-local", 49152),
 ]
 
 csv_lock = threading.Lock()
@@ -310,7 +311,7 @@ def vllm_cmd(lane: Lane) -> list[str]:
         "--reasoning-config",
         '{"reasoning_start_str":"<think>","reasoning_end_str":"</think>"}',
         "--max-model-len",
-        str(MAX_MODEL_LEN),
+        str(lane.max_model_len),
         "--max-num-seqs",
         "128",
     ]
@@ -346,7 +347,7 @@ def start_or_reuse_vllm(lane: Lane) -> int | None:
         cwd=ROOT,
         run_dir=lane.model_path,
         command=shell_join(cmd) + f" > {shlex.quote(str(log_path))} 2>&1 < /dev/null",
-        notes=f"Matrix vLLM service; lane={lane.name}; model={lane.served_name}; max_model_len={MAX_MODEL_LEN}; gpu_memory_utilization=0.9.",
+        notes=f"Matrix vLLM service; lane={lane.name}; model={lane.served_name}; max_model_len={lane.max_model_len}; gpu_memory_utilization=0.9.",
         log_path=log_path,
     )
     log(f"started vLLM {lane.name} pid={process.pid} log={log_path}")
