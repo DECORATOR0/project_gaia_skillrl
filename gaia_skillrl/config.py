@@ -19,6 +19,7 @@ class LLMConfig:
     max_tokens: int | None = None
     timeout_seconds: int = 180
     enable_thinking: bool | None = None
+    thinking_token_budget: int | None = None
     stream: bool = False
 
 
@@ -42,6 +43,7 @@ class RuntimeConfig:
     bootstrap_initial_skill: bool = False
     initial_skill_path: str = ""
     tool_profile: str = "atomic_v2"
+    answer_acceptance_policy: str = "conclude_only"
     max_context_chars: int = 0
     python_executable: str = "python3"
     shell_program: str = "/bin/bash"
@@ -130,6 +132,7 @@ def _llm_from_dict(name: str, data: dict[str, Any]) -> LLMConfig:
     shared_timeout = _env_override("NLRL_LLM_TIMEOUT_SECONDS")
     shared_max_tokens = _env_override("NLRL_LLM_MAX_TOKENS")
     shared_enable_thinking = _env_override("NLRL_LLM_ENABLE_THINKING")
+    shared_thinking_token_budget = _env_override("NLRL_LLM_THINKING_TOKEN_BUDGET", "NLRL_LLM_THINKING_BUDGET")
     shared_stream = _env_override("NLRL_LLM_STREAM")
 
     raw_max_tokens = data.get("max_tokens")
@@ -149,6 +152,18 @@ def _llm_from_dict(name: str, data: dict[str, Any]) -> LLMConfig:
         value = data.get("enable_thinking")
         enable_thinking = None if value is None else bool(value)
 
+    raw_thinking_token_budget = data.get("thinking_token_budget", data.get("thinking_budget"))
+    thinking_token_budget_override = _env_override(
+        f"{role_prefix}_THINKING_TOKEN_BUDGET",
+        f"{role_prefix}_THINKING_BUDGET",
+    )
+    thinking_token_budget: int | None = None
+    resolved_thinking_token_budget = thinking_token_budget_override or shared_thinking_token_budget
+    if resolved_thinking_token_budget is not None:
+        thinking_token_budget = int(resolved_thinking_token_budget)
+    elif raw_thinking_token_budget is not None:
+        thinking_token_budget = int(raw_thinking_token_budget)
+
     stream_raw = _env_override(f"{role_prefix}_STREAM") or shared_stream
     if stream_raw is not None:
         stream = stream_raw.strip().lower() in {"1", "true", "yes", "on"}
@@ -165,6 +180,7 @@ def _llm_from_dict(name: str, data: dict[str, Any]) -> LLMConfig:
         max_tokens=max_tokens,
         timeout_seconds=int(_env_override(f"{role_prefix}_TIMEOUT_SECONDS") or shared_timeout or data.get("timeout_seconds", 180)),
         enable_thinking=enable_thinking,
+        thinking_token_budget=thinking_token_budget,
         stream=stream,
     )
 
@@ -179,6 +195,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         "bootstrap_initial_skill": _env_override("NLRL_RUNTIME_BOOTSTRAP_INITIAL_SKILL"),
         "initial_skill_path": _env_override("NLRL_RUNTIME_INITIAL_SKILL_PATH"),
         "tool_profile": _env_override("NLRL_RUNTIME_TOOL_PROFILE"),
+        "answer_acceptance_policy": _env_override("NLRL_RUNTIME_ANSWER_ACCEPTANCE_POLICY"),
         "max_context_chars": _env_override("NLRL_RUNTIME_MAX_CONTEXT_CHARS"),
         "python_executable": _env_override("NLRL_RUNTIME_PYTHON_EXECUTABLE"),
         "shell_program": _env_override("NLRL_RUNTIME_SHELL_PROGRAM"),

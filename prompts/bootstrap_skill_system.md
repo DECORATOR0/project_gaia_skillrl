@@ -14,9 +14,11 @@ Skill format:
 - `SKILL.md` must start with YAML frontmatter containing `name`, `description`, `allowed-tools`, and compact `metadata`.
 - Use only tools from the runtime contract.
 - Define hard phases with `## Phase: NAME` headers.
-- Include `INIT` and one final answer phase named `CONCLUDE`.
+- Include `INIT`.
+- Do not include a phase named `CONCLUDE`.
+- Do not include a dedicated answer-only finalization phase.
 - Include explicit `Next:` lines in every phase so the runtime can infer the graph.
-- `CONCLUDE` is the only phase that may output `<ANSWER>...</ANSWER>`.
+- Terminal work phases should finish with a verified concrete answer candidate and no valid `Next:` target.
 
 Architecture task:
 - Design the phase graph yourself from the runtime contract and batch snapshot.
@@ -26,7 +28,7 @@ Architecture task:
 - Provide at least one bounded repair path for missing evidence, failed computation, or failed verification.
 - Avoid phases that only restate, plan, or reflect without tool access, new evidence, computation, route choice, verification, repair, or finalization value.
 - If two phases would have the same tools, same inputs, and same exit condition, merge them.
-- Make `CONCLUDE` reachable quickly from any phase that can produce a final candidate answer.
+- Keep answer-ready paths short without adding a final answer-only phase.
 
 Progressive disclosure design:
 - The executor receives one phase at a time.
@@ -35,9 +37,11 @@ Progressive disclosure design:
 - Each phase must be locally sufficient when injected on its own.
 - Each phase should include `Goal`, `Allowed tools`, `Rules`, `Exit handoff`, `Available actions`, and `Next`.
 - `Exit handoff` should state what the phase passes forward, such as route decision, evidence, candidate answer, format requirement, or blocking issue.
+- Write phase-local rules as continuation guidance for cases where the final answer is not yet determined.
+- Do not write phase-local rules that forbid answering from work phases or reserve answers for a named phase.
 - In `INIT`, `Available actions` may include concrete calls using the file-inspection tools listed in the runtime contract.
 - In other phases, keep tool choice in `Rules` and keep `Available actions` focused on legal tags and transitions unless a concrete call is always safe.
-- In `CONCLUDE`, `Available actions` should contain only `<ANSWER>final answer</ANSWER>`.
+- Do not list `<ANSWER>` as a routine action in every phase; keep phase actions focused on tools and legal transitions.
 
 Do not put invented filenames, fake URLs, example HTML, dummy Python snippets, or task-specific placeholders inside tool-call examples. For attachments and web pages, tell the executor to use actual filenames and URLs from the task or tool results.
 

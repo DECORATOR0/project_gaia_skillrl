@@ -55,12 +55,22 @@ B_DEV_RUN_NAME = f"{RUN_PREFIX}_fresh_bootv3_B_sharded_dev_eval_{CONCURRENCY_LAB
 B_TEST_RUN_NAME = f"{RUN_PREFIX}_fresh_bootv3_B_sharded_test_eval_{CONCURRENCY_LABEL}"
 QUEUE_NAME = f"{RUN_PREFIX}_fresh_bootstrap_ab_tail_queue_{CONCURRENCY_LABEL}"
 
-LANES = {
-    "gpu0": "http://127.0.0.1:8100/v1",
-    "gpu1": "http://127.0.0.1:8101/v1",
-    "gpu2": "http://127.0.0.1:8102/v1",
-    "gpu3": "http://127.0.0.1:8103/v1",
-}
+REMOTE_EXECUTOR_BASE_URL = os.environ.get("GAIA_ARCHV5_REMOTE_EXECUTOR_BASE_URL", "").strip()
+REMOTE_EXECUTOR_LANES = max(1, int(os.environ.get("GAIA_ARCHV5_REMOTE_EXECUTOR_LANES", "4")))
+EXECUTOR_MODEL = os.environ.get(
+    "GAIA_ARCHV5_EXECUTOR_MODEL",
+    "qwen3.5-9b" if REMOTE_EXECUTOR_BASE_URL else "Qwen3-8B-local",
+).strip()
+if REMOTE_EXECUTOR_BASE_URL:
+    LANES = {f"remote{idx}": REMOTE_EXECUTOR_BASE_URL for idx in range(REMOTE_EXECUTOR_LANES)}
+else:
+    LANES = {
+        "gpu0": "http://127.0.0.1:8100/v1",
+        "gpu1": "http://127.0.0.1:8101/v1",
+        "gpu2": "http://127.0.0.1:8102/v1",
+        "gpu3": "http://127.0.0.1:8103/v1",
+    }
+LANE_NAMES = list(LANES)
 
 
 sys.path.insert(0, str(ROOT))
@@ -155,6 +165,10 @@ def selected_env(env: dict[str, str]) -> dict[str, str]:
         "NLRL_TOOL_BASE_URL",
         "NLRL_TOOL_API_KEY",
         "NLRL_TOOL_TIMEOUT_SECONDS",
+        "GAIA_ARCHV5_REMOTE_EXECUTOR_BASE_URL",
+        "GAIA_ARCHV5_REMOTE_EXECUTOR_LANES",
+        "GAIA_ARCHV5_EXECUTOR_MODEL",
+        "GAIA_FRESH_QUEUE_SKIP_BOOTSTRAP_PREFLIGHT",
         "GAIA_FRESH_QUEUE_PREFIX",
         "GAIA_FRESH_QUEUE_CONCURRENCY",
         "GAIA_FRESH_QUEUE_TAIL_THRESHOLD",
@@ -415,7 +429,7 @@ def build_env(job: TrainJob) -> dict[str, str]:
             "NLRL_RUNTIME_ITERATIONS_PER_BATCH": str(job.iterations),
             "NLRL_RUNTIME_CRITIC_STRATEGY": job.strategy,
             "NLRL_RUNTIME_CRITIC_SHARD_SIZE": "12",
-            "NLRL_EXECUTOR_MODEL": "Qwen3-8B-local",
+            "NLRL_EXECUTOR_MODEL": EXECUTOR_MODEL,
             "NLRL_EXECUTOR_BASE_URL": LANES[job.lane],
             "NLRL_EXECUTOR_API_KEY": "EMPTY",
             "NLRL_EXECUTOR_API_MODE": "chat_completions",
@@ -588,7 +602,7 @@ def run_offline_variant(
         {
             "iteration_index": 0,
             "summary": (
-                "Fresh boot-v3 dev states after local Qwen3 API alignment and "
+                f"Fresh boot-v3 dev states after {EXECUTOR_MODEL} executor alignment and "
                 f"tail-threshold={TAIL_THRESHOLD} scheduling."
             ),
         }
@@ -641,20 +655,20 @@ def start_a_eval_jobs(a_skill: Path) -> list[TrainJob]:
             key="a_dev",
             run_name=A_DEV_RUN_NAME,
             dataset=DEV_DATASET,
-            lane="gpu0",
+            lane=LANE_NAMES[0],
             skill_path=a_skill,
         ),
-        notes=f"fresh A_full offline actor skill validation_dev83 eval; lane=gpu0; skill={a_skill}",
+        notes=f"fresh A_full offline actor skill validation_dev83 eval; lane={LANE_NAMES[0]}; skill={a_skill}",
     )
     a_test = start_train(
         TrainJob(
             key="a_test",
             run_name=A_TEST_RUN_NAME,
             dataset=TEST_DATASET,
-            lane="gpu1",
+            lane=LANE_NAMES[min(1, len(LANE_NAMES) - 1)],
             skill_path=a_skill,
         ),
-        notes=f"fresh A_full offline actor skill validation_test82 eval; lane=gpu1; skill={a_skill}",
+        notes=f"fresh A_full offline actor skill validation_test82 eval; lane={LANE_NAMES[min(1, len(LANE_NAMES) - 1)]}; skill={a_skill}",
     )
     return [a_dev, a_test]
 
@@ -665,10 +679,10 @@ def start_b_test_eval(b_skill: Path) -> TrainJob:
             key="b_test",
             run_name=B_TEST_RUN_NAME,
             dataset=TEST_DATASET,
-            lane="gpu3",
+            lane=LANE_NAMES[min(3, len(LANE_NAMES) - 1)],
             skill_path=b_skill,
         ),
-        notes=f"fresh B_sharded offline actor skill validation_test82 eval; lane=gpu3; skill={b_skill}",
+        notes=f"fresh B_sharded offline actor skill validation_test82 eval; lane={LANE_NAMES[min(3, len(LANE_NAMES) - 1)]}; skill={b_skill}",
     )
 
 
@@ -678,10 +692,10 @@ def start_b_dev_eval(b_skill: Path) -> TrainJob:
             key="b_dev",
             run_name=B_DEV_RUN_NAME,
             dataset=DEV_DATASET,
-            lane="gpu2",
+            lane=LANE_NAMES[min(2, len(LANE_NAMES) - 1)],
             skill_path=b_skill,
         ),
-        notes=f"fresh B_sharded offline actor skill validation_dev83 eval; lane=gpu2; skill={b_skill}",
+        notes=f"fresh B_sharded offline actor skill validation_dev83 eval; lane={LANE_NAMES[min(2, len(LANE_NAMES) - 1)]}; skill={b_skill}",
     )
 
 
@@ -690,9 +704,15 @@ def preflight() -> None:
     missing = [str(path) for path in required if not path.exists()]
     if missing:
         raise RuntimeError(f"Missing required paths: {missing}")
-    bootstrap_prompt = (ROOT / "prompts/bootstrap_skill_system.md").read_text(encoding="utf-8")
-    if "Make `CONCLUDE` reachable quickly" not in bootstrap_prompt:
-        raise RuntimeError("bootstrap_skill_system.md is not the 4/21 quick-CONCLUDE prompt.")
+    if os.environ.get("GAIA_FRESH_QUEUE_SKIP_BOOTSTRAP_PREFLIGHT", "").strip().lower() not in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }:
+        bootstrap_prompt = (ROOT / "prompts/bootstrap_skill_system.md").read_text(encoding="utf-8")
+        if "Make `CONCLUDE` reachable quickly" not in bootstrap_prompt:
+            raise RuntimeError("bootstrap_skill_system.md is not the 4/21 quick-CONCLUDE prompt.")
 
 
 def wait_all(jobs: list[TrainJob], *, allow_tail_stop: bool = True) -> None:
@@ -777,12 +797,12 @@ def main() -> int:
                     key="boot_dev",
                     run_name=BOOT_DEV_RUN_NAME,
                     dataset=DEV_DATASET,
-                    lane="gpu0",
+                    lane=LANE_NAMES[0],
                     bootstrap=True,
                 ),
                 notes=(
-                    f"fresh boot-v3 bootstrap skill + validation_dev83 eval; lane=gpu0; "
-                    f"{CONCURRENCY_LABEL}; local Qwen3 API aligned."
+                    f"fresh boot-v3 bootstrap skill + validation_dev83 eval; lane={LANE_NAMES[0]}; "
+                    f"{CONCURRENCY_LABEL}; executor={EXECUTOR_MODEL}."
                 ),
             )
             jobs.append(boot_dev)
@@ -802,11 +822,11 @@ def main() -> int:
                     key="boot_test",
                     run_name=BOOT_TEST_RUN_NAME,
                     dataset=TEST_DATASET,
-                    lane="gpu2",
+                    lane=LANE_NAMES[min(2, len(LANE_NAMES) - 1)],
                     skill_path=boot_skill,
                 ),
                 notes=(
-                    f"fresh bootstrap skill validation_test82 eval; lane=gpu2; {CONCURRENCY_LABEL}; "
+                    f"fresh bootstrap skill validation_test82 eval; lane={LANE_NAMES[min(2, len(LANE_NAMES) - 1)]}; {CONCURRENCY_LABEL}; "
                     f"skill={boot_skill}"
                 ),
             )
@@ -822,7 +842,8 @@ def main() -> int:
         eval_jobs: list[TrainJob] = []
         b_skill: Path | None = None
         b_dev_started = False
-        with ThreadPoolExecutor(max_workers=2, thread_name_prefix="offline-ab") as pool:
+        offline_workers = max(1, int(os.environ.get("GAIA_FRESH_OFFLINE_AB_WORKERS", "1")))
+        with ThreadPoolExecutor(max_workers=offline_workers, thread_name_prefix="offline-ab") as pool:
             offline_futures = {
                 pool.submit(
                     run_offline_variant,

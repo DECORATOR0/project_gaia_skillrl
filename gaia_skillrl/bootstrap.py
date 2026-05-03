@@ -22,7 +22,7 @@ class SkillBootstrapper:
         return {
             "executor_model": self.config.executor.model,
             "max_executor_steps": self.config.runtime.max_executor_steps,
-            "answer_rule": "Only the CONCLUDE phase may emit <ANSWER>...</ANSWER>.",
+            "answer_rule": "A non-empty <ANSWER>...</ANSWER> is accepted as the final answer by the runtime; empty answers are rejected.",
             "phase_header_format": "## Phase: NAME",
             "action_tags": {
                 "tool_call": "<CALL>tool_name</CALL><ARGS>{...}</ARGS>",
@@ -41,7 +41,7 @@ class SkillBootstrapper:
                 "The runtime infers the phase graph from explicit Next: lines; missing Next: lines fall back to phase order.",
                 "The runtime infers per-phase tool allowlists from Allowed tools: lines and concrete <CALL> examples.",
                 "The current phase may emit exactly one action per step: <CALL>, <NEXT>, or <ANSWER>.",
-                "A non-CONCLUDE <ANSWER> is rejected by the runtime.",
+                "Bootstrap skills should not create a dedicated CONCLUDE or answer-only finalization phase.",
                 "An unsupported <NEXT> target is rejected by the runtime.",
             ],
         }

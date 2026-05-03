@@ -1,0 +1,27 @@
+{
+  "provider": "serper",
+  "fallback_provider": "ddg",
+  "serper_api_keys": [
+    "dc4c4ad54c5028e063e46880937e20cd17019faf",
+    "de183dbe8b824529b6f0b1689a1a730aa9be1630",
+    "d9cdd4d3ac98dc02b8a9cf9f3f73a4454de69131",
+    "539c5f4ecc589f8872d73e307aa6bd16bd7bb433"
+  ],
+  "serper_api_key": "dc4c4ad54c5028e063e46880937e20cd17019faf",
+  "serper_backup_api_keys": [
+    "de183dbe8b824529b6f0b1689a1a730aa9be1630",
+    "d9cdd4d3ac98dc02b8a9cf9f3f73a4454de69131",
+    "539c5f4ecc589f8872d73e307aa6bd16bd7bb433"
+  ],
+  "serper_exhausted_api_keys": [
+    "e25215f4c28a8efd2e14f1ee3e1313dde953d13d"
+  ],
+  "serper_search_endpoint": "https://google.serper.dev/search",
+  "serper_search_timeout_seconds": 30,
+  "http_proxy": "http://127.0.0.1:17890",
+  "https_proxy": "http://127.0.0.1:17890",
+  "no_proxy": "127.0.0.1,localhost",
+  "clear_all_proxy": true,
+  "verified_at": "2026-05-03 18:31 +0800",
+  "notes": "Default GAIA search runtime. Change this file when Serper keys or proxy ports rotate. Added fourth Serper key d9cdd4d3ac98dc02b8a9cf9f3f73a4454de69131 and fifth Serper key 539c5f4ecc589f8872d73e307aa6bd16bd7bb433 on 2026-05-03; not smoke-tested to avoid consuming quota before launch."
+}

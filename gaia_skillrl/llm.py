@@ -232,6 +232,8 @@ class OpenAICompatibleLLM:
         resolved_max_tokens = self.config.max_tokens if max_tokens is None else max_tokens
         if resolved_max_tokens is not None:
             payload["max_tokens"] = resolved_max_tokens
+        if self.config.thinking_token_budget is not None:
+            payload["thinking_token_budget"] = self.config.thinking_token_budget
         return payload
 
     def _build_responses_payload(self, messages: list[LLMMessage]) -> dict[str, Any]:
@@ -502,6 +504,8 @@ class OpenAICompatibleLLM:
                                 delta = choices[0].get("delta")
                                 if isinstance(delta, dict):
                                     reasoning = delta.get("reasoning_content")
+                                    if not isinstance(reasoning, str):
+                                        reasoning = delta.get("reasoning")
                                     if isinstance(reasoning, str) and reasoning:
                                         reasoning_chunk_count += 1
                                 reason = choices[0].get("finish_reason")
@@ -613,6 +617,7 @@ class OpenAICompatibleLLM:
             "model": self.config.model,
             "temperature": self.config.temperature if temperature is None else temperature,
             "max_tokens": self.config.max_tokens if max_tokens is None else max_tokens,
+            "thinking_token_budget": self.config.thinking_token_budget,
             "prompt": prompt,
             "timeout_seconds": timeout_seconds,
         }

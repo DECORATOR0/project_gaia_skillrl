@@ -17,14 +17,13 @@ _DEFAULT_PHASES = {
     "INIT": SkillPhase(
         name="INIT",
         content=(
-            "Inspect the task directory first.\n"
-            "Read `task.json` before touching any attachment.\n"
+            "Use the task JSON already shown in the prompt as the task statement.\n"
+            "Inspect listed local attachments when their contents are needed.\n"
             "Do not answer in this phase.\n"
             "Do not jump directly to ANALYZE or CONCLUDE.\n"
             "When the task layout is clear, move to GATHER.\n\n"
             "Available actions:\n"
             "- <CALL>list_dir</CALL><ARGS>{\"path\": \".\"}</ARGS>\n"
-            "- <CALL>read_json_file</CALL><ARGS>{\"path\": \"task.json\"}</ARGS>\n"
             "- <NEXT>GATHER</NEXT>"
         ),
         order=0,
@@ -212,11 +211,15 @@ class SkillEnvironment:
         )
         init_phase = phases["INIT"]
         initial_prompt = self._build_initial_prompt(task, active_skill, init_phase)
-        resolved_conclude_prompt = _phase_prompt("CONCLUDE", phases["CONCLUDE"].content)
-        fallback_conclude_prompt = (
-            "Remaining steps are low. Stop gathering and map the evidence you already have to the final short answer.\n\n"
-            + resolved_conclude_prompt
-        )
+        if "CONCLUDE" in phases:
+            resolved_conclude_prompt = _phase_prompt("CONCLUDE", phases["CONCLUDE"].content)
+            fallback_conclude_prompt = (
+                "Remaining steps are low. Stop gathering and map the evidence you already have to the final short answer.\n\n"
+                + resolved_conclude_prompt
+            )
+        else:
+            resolved_conclude_prompt = ""
+            fallback_conclude_prompt = ""
 
         self.toolbox.set_active_skill_dir(active_skill.header.skill_dir)
         self.toolbox.set_active_task_data_dir(task.data_dir)
@@ -236,6 +239,7 @@ class SkillEnvironment:
                     phases,
                     active_skill.header.allowed_tools or [],
                 ),
+                answer_acceptance_policy=self.config.runtime.answer_acceptance_policy,
             )
         finally:
             self.toolbox.set_active_skill_dir(None)
@@ -322,7 +326,8 @@ class DirectEnvironment:
         )
         if normalize_tool_profile(self.config.runtime.tool_profile) == "reagent_facade_v3":
             suggested = (
-                "- inspect `task.json` and local files first with `file_reader`\n"
+                "- use the task JSON shown above as the task statement\n"
+                "- inspect listed local attachments with `file_reader` when their contents are needed\n"
                 "- use `file_reader` for local PDFs, tables, DOCX/PPTX, HTML, archives, JSON, and text\n"
                 "- use `image2text` for images and OCR, and `audio2text` for audio\n"
                 "- use `search` for web discovery and `browse` for reading a specific URL\n"
@@ -331,7 +336,8 @@ class DirectEnvironment:
             )
         else:
             suggested = (
-                "- inspect `task.json` and local files first\n"
+                "- use the task JSON shown above as the task statement\n"
+                "- inspect listed local attachments with matching tools when their contents are needed\n"
                 "- matching tools are available for DOCX, PPTX, archives, HTML, audio, and image files when needed\n"
                 "- use web tools only when the task needs external evidence\n"
                 "- use `run_python` for arithmetic or structured parsing\n"

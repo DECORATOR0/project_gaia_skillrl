@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .config import clone_system_config, load_system_config
 from .dataset import build_gaia_converted_dataset
+from .search_config import apply_search_runtime_env
 from .trainer import GaiaSkillTrainer
 from .utils import ensure_preferred_proxy_env
 
@@ -50,6 +51,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     ensure_preferred_proxy_env()
+    apply_search_runtime_env()
     parser = build_parser()
     args = parser.parse_args()
     config = load_system_config(args.config)

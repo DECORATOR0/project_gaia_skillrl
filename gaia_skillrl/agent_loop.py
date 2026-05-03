@@ -227,57 +227,120 @@ def _format_allowed_next(allowed_next: list[str]) -> str:
     return ", ".join(allowed_next)
 
 
-def _format_must_choose_feedback(allowed_next: list[str]) -> str:
-    if not allowed_next:
-        return "There are no legal next phases from this phase."
-    return f"You must choose one of: {_format_allowed_next(allowed_next)}."
+def _format_allowed_tools(allowed_tools: list[str]) -> str:
+    if not allowed_tools:
+        return "(none)"
+    return ", ".join(allowed_tools)
 
 
-def _invalid_phase_transition_feedback(current_phase: str, requested_next: str, allowed_next: list[str]) -> str:
-    return (
-        "Invalid phase transition.\n"
-        f"{requested_next} is illegal from {current_phase}.\n"
-        f"{_format_must_choose_feedback(allowed_next)}"
-    )
+def _phase_allowed_tools(
+    phase_tool_allowlist: dict[str, list[str]] | None,
+    current_phase: str,
+    allowed_tools: list[str] | None,
+) -> list[str]:
+    if phase_tool_allowlist is not None:
+        return phase_tool_allowlist.get(current_phase, [])
+    return allowed_tools or []
 
 
-def _unknown_phase_feedback(current_phase: str, requested_next: str, allowed_next: list[str]) -> str:
-    return (
-        "Unknown phase.\n"
-        f"{requested_next} is an unrecognized phase from {current_phase}.\n"
-        f"{_format_must_choose_feedback(allowed_next)}"
-    )
+def _allowed_scope_feedback(current_phase: str, allowed_next: list[str], allowed_tools: list[str]) -> str:
+    lines = [
+        "Attention: continue with one allowed action in the current scope.",
+        "The immediately previous output is omitted from the visible working memory.",
+        f"Current phase: {current_phase}.",
+        "Allowed actions:",
+    ]
+    if allowed_tools:
+        lines.append(
+            "- Tool call: <CALL>tool_name</CALL><ARGS>{...}</ARGS>; "
+            f"tool_name must be one of: {_format_allowed_tools(allowed_tools)}."
+        )
+    if allowed_next:
+        lines.append(
+            "- Phase transition: <NEXT>PHASE_NAME</NEXT>; "
+            f"PHASE_NAME must be one of: {_format_allowed_next(allowed_next)}."
+        )
+    if current_phase == "CONCLUDE":
+        lines.append("- Final answer: <ANSWER>short final answer</ANSWER>.")
+    if len(lines) == 4:
+        lines.append("- Follow the visible phase block and emit one valid action from it.")
+    return "\n".join(lines)
 
 
-def _invalid_answer_feedback(current_phase: str) -> str:
-    return (
-        "Invalid answer output.\n"
-        f"Current phase: {current_phase}\n"
-        "Answer is only allowed in CONCLUDE."
-    )
+def _invalid_phase_transition_feedback(
+    current_phase: str,
+    requested_next: str,
+    allowed_next: list[str],
+    allowed_tools: list[str],
+) -> str:
+    return _allowed_scope_feedback(current_phase, allowed_next, allowed_tools)
 
 
-def _invalid_phase_tool_feedback(current_phase: str, tool_name: str, allowed_tools: list[str]) -> str:
-    allowed_text = ", ".join(allowed_tools) if allowed_tools else "(none)"
-    return (
-        "Tool use is not allowed in the current phase.\n"
-        f"Current phase: {current_phase}\n"
-        f"Requested tool: {tool_name}\n"
-        f"Allowed tools in this phase: {allowed_text}"
-    )
+def _unknown_phase_feedback(
+    current_phase: str,
+    requested_next: str,
+    allowed_next: list[str],
+    allowed_tools: list[str],
+) -> str:
+    return _allowed_scope_feedback(current_phase, allowed_next, allowed_tools)
 
 
-def _phase_runtime_instruction(current_phase: str, allowed_next: list[str]) -> str:
+def _invalid_answer_feedback(current_phase: str, allowed_next: list[str], allowed_tools: list[str]) -> str:
+    return _allowed_scope_feedback(current_phase, allowed_next, allowed_tools)
+
+
+def _invalid_phase_tool_feedback(
+    current_phase: str,
+    tool_name: str,
+    allowed_next: list[str],
+    allowed_tools: list[str],
+) -> str:
+    return _allowed_scope_feedback(current_phase, allowed_next, allowed_tools)
+
+
+def _phase_runtime_instruction(
+    current_phase: str,
+    allowed_next: list[str],
+    *,
+    has_conclude_phase: bool = True,
+) -> str:
     allowed_next_text = _format_allowed_next(allowed_next)
     if current_phase == "CONCLUDE":
         return "You are in CONCLUDE. Output only the final short answer inside <ANSWER>...</ANSWER>."
-    return (
+    lines = [
         f"You are still in {current_phase}. Follow this phase's visible-memory, tool, and exit-handoff rules.\n"
-        "Do not answer yet.\n"
-        f"Allowed next: {allowed_next_text}\n"
-        "If this phase's exit handoff is ready, emit <NEXT>PHASE_NAME</NEXT> using one allowed next phase. "
-        "If more evidence or computation is needed, call exactly one allowed tool next."
-    )
+    ]
+    if has_conclude_phase:
+        lines.append("Do not answer yet.\n")
+    lines.append(f"Allowed next: {allowed_next_text}\n")
+    if allowed_next:
+        lines.append(
+            "If this phase's exit handoff is ready, emit <NEXT>PHASE_NAME</NEXT> using one allowed next phase. "
+        )
+    lines.append("If more evidence or computation is needed, call exactly one allowed tool next.")
+    return "".join(lines)
+
+
+def _normalize_answer_acceptance_policy(value: str | None) -> str:
+    policy = (value or "conclude_only").strip().lower().replace("-", "_")
+    aliases = {
+        "default": "conclude_only",
+        "strict": "conclude_only",
+        "conclude": "conclude_only",
+        "conclude_only": "conclude_only",
+        "predecessor": "conclude_predecessor",
+        "conclude_pred": "conclude_predecessor",
+        "conclude_predecessor": "conclude_predecessor",
+        "any": "any_phase",
+        "anyphase": "any_phase",
+        "any_phase": "any_phase",
+    }
+    if policy not in aliases:
+        raise ValueError(
+            "Unsupported answer_acceptance_policy "
+            f"{value!r}; expected conclude_only, conclude_predecessor, or any_phase."
+        )
+    return aliases[policy]
 
 
 def _direct_runtime_instruction(*, remaining_steps: int) -> str:
@@ -288,7 +351,7 @@ def _direct_runtime_instruction(*, remaining_steps: int) -> str:
         )
     return (
         "Keep solving the task directly.\n"
-        "If local files are still unchecked, inspect them before more web calls when possible.\n"
+        "If listed local attachments are still unchecked and their contents are needed, inspect them before more web calls when possible.\n"
         "If evidence is sufficient, answer with <ANSWER>short final answer</ANSWER>.\n"
         "If evidence is still missing, call exactly one tool next."
         + low_step_hint
@@ -325,6 +388,7 @@ class PhaseExecutorAgent:
         resolved_conclude_prompt: str,
         fallback_conclude_prompt: str,
         phase_tool_allowlist: dict[str, list[str]] | None = None,
+        answer_acceptance_policy: str = "conclude_only",
     ) -> tuple[ParsedAction, str, list[ToolCallRecord], list[PhaseTransition], list[ExecutorStepRecord]]:
         tool_protocol = load_prompt(self.prompt_root / "tool_agent_protocol.md")
         full_system = (
@@ -346,6 +410,8 @@ class PhaseExecutorAgent:
 
         allowed_set = set(allowed_tools or [])
         recognized_phases = set(phase_transition_graph)
+        answer_policy = _normalize_answer_acceptance_policy(answer_acceptance_policy)
+        has_conclude_phase = "CONCLUDE" in recognized_phases
 
         for step_idx in range(1, max_steps + 1):
             remaining_steps = max_steps - step_idx + 1
@@ -376,13 +442,25 @@ class PhaseExecutorAgent:
                 result,
             )
             raw_outputs.append(result.text)
-            messages.append(LLMMessage(role="assistant", content=result.text))
 
             parsed = parse_executor_tags(result.text)
             phase_before = current_phase
 
             if parsed.action_type == "answer":
-                if current_phase == "CONCLUDE":
+                accept_answer = (
+                    current_phase == "CONCLUDE"
+                    or answer_policy == "any_phase"
+                    or (
+                        answer_policy == "conclude_predecessor"
+                        and "CONCLUDE" in phase_transition_graph.get(current_phase, [])
+                    )
+                )
+                if accept_answer and parsed.answer.strip():
+                    outcome = (
+                        "final_answer"
+                        if current_phase == "CONCLUDE"
+                        else f"final_answer_from_{current_phase.lower()}"
+                    )
                     step_trace.append(
                         ExecutorStepRecord(
                             step_index=step_idx,
@@ -393,13 +471,17 @@ class PhaseExecutorAgent:
                             answer=parsed.answer,
                             accepted=True,
                             success=True,
-                            outcome="final_answer",
+                            outcome=outcome,
                             raw_output=result.text,
                         )
                     )
                     final_action = parsed
                     break
-                feedback = _invalid_answer_feedback(current_phase)
+                feedback = _invalid_answer_feedback(
+                    current_phase,
+                    phase_transition_graph.get(current_phase, []),
+                    _phase_allowed_tools(phase_tool_allowlist, current_phase, allowed_tools),
+                )
                 step_trace.append(
                     ExecutorStepRecord(
                         step_index=step_idx,
@@ -430,10 +512,15 @@ class PhaseExecutorAgent:
                 thought = parsed.thought
                 accepted = True
                 try:
-                    phase_allowed_tools = (phase_tool_allowlist or {}).get(current_phase, [])
+                    phase_allowed_tools = _phase_allowed_tools(phase_tool_allowlist, current_phase, allowed_tools)
                     if phase_tool_allowlist is not None and tool_name not in phase_allowed_tools:
                         raise PermissionError(
-                            _invalid_phase_tool_feedback(current_phase, tool_name, phase_allowed_tools)
+                            _invalid_phase_tool_feedback(
+                                current_phase,
+                                tool_name,
+                                phase_transition_graph.get(current_phase, []),
+                                phase_allowed_tools,
+                            )
                         )
                     if allowed_set and tool_name not in allowed_set:
                         raise PermissionError(
@@ -489,25 +576,40 @@ class PhaseExecutorAgent:
                         raw_output=result.text,
                     )
                 )
+                if accepted:
+                    messages.append(LLMMessage(role="assistant", content=result.text))
+                    followup_content = (
+                        f"Tool result for step {step_idx}:\n"
+                        f"- tool: {tool_name}\n"
+                        f"- success: {success}\n"
+                        f"- observation: {observation}\n\n"
+                        f"{_phase_runtime_instruction(current_phase, phase_transition_graph.get(current_phase, []), has_conclude_phase=has_conclude_phase)}"
+                    )
+                else:
+                    followup_content = _allowed_scope_feedback(
+                        current_phase,
+                        phase_transition_graph.get(current_phase, []),
+                        phase_allowed_tools,
+                    )
                 messages.append(
                     LLMMessage(
                         role="user",
-                        content=(
-                            f"Tool result for step {step_idx}:\n"
-                            f"- tool: {tool_name}\n"
-                            f"- success: {success}\n"
-                            f"- observation: {observation}\n\n"
-                            f"{_phase_runtime_instruction(current_phase, phase_transition_graph.get(current_phase, []))}"
-                        ),
+                        content=followup_content,
                     )
                 )
 
             elif parsed.action_type == "next":
                 next_phase = parsed.next_phase
                 allowed_next = phase_transition_graph.get(current_phase, [])
+                current_allowed_tools = _phase_allowed_tools(phase_tool_allowlist, current_phase, allowed_tools)
                 phase_after = current_phase
                 if next_phase not in recognized_phases:
-                    feedback = _unknown_phase_feedback(current_phase, next_phase, allowed_next)
+                    feedback = _unknown_phase_feedback(
+                        current_phase,
+                        next_phase,
+                        allowed_next,
+                        current_allowed_tools,
+                    )
                     outcome = "unknown_phase"
                     raw_outputs.append(f"[runtime_feedback]\n{feedback}")
                     messages.append(
@@ -517,7 +619,12 @@ class PhaseExecutorAgent:
                         )
                     )
                 elif next_phase not in allowed_next:
-                    feedback = _invalid_phase_transition_feedback(current_phase, next_phase, allowed_next)
+                    feedback = _invalid_phase_transition_feedback(
+                        current_phase,
+                        next_phase,
+                        allowed_next,
+                        current_allowed_tools,
+                    )
                     outcome = "invalid_phase_transition"
                     raw_outputs.append(f"[runtime_feedback]\n{feedback}")
                     messages.append(
@@ -554,6 +661,7 @@ class PhaseExecutorAgent:
                             "Follow the instructions above for this phase."
                         )
                     )
+                    messages.append(LLMMessage(role="assistant", content=result.text))
                     messages.append(
                         LLMMessage(
                             role="user",
@@ -561,7 +669,12 @@ class PhaseExecutorAgent:
                         )
                     )
                 else:
-                    feedback = _unknown_phase_feedback(current_phase, next_phase, allowed_next)
+                    feedback = _unknown_phase_feedback(
+                        current_phase,
+                        next_phase,
+                        allowed_next,
+                        current_allowed_tools,
+                    )
                     raw_outputs.append(f"[runtime_feedback]\n{feedback}")
                     messages.append(
                         LLMMessage(
@@ -587,14 +700,9 @@ class PhaseExecutorAgent:
                 )
 
             else:
-                feedback = (
-                    "Your response did not contain a recognized action tag. "
-                    "You must use exactly one of:\n"
-                    "- <CALL>tool_name</CALL><ARGS>{...}</ARGS> to call a tool\n"
-                    "- <NEXT>PHASE_NAME</NEXT> to transition to the next phase\n"
-                    "- <ANSWER>short final answer</ANSWER> to give your final answer\n\n"
-                    f"Current phase: {current_phase}. Try again."
-                )
+                allowed_next = phase_transition_graph.get(current_phase, [])
+                current_allowed_tools = _phase_allowed_tools(phase_tool_allowlist, current_phase, allowed_tools)
+                feedback = _allowed_scope_feedback(current_phase, allowed_next, current_allowed_tools)
                 step_trace.append(
                     ExecutorStepRecord(
                         step_index=step_idx,

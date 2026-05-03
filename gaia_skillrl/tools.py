@@ -27,6 +27,7 @@ from duckduckgo_search import DDGS
 from PIL import Image
 from pypdf import PdfReader
 
+from .search_config import apply_search_runtime_env
 from .utils import ensure_dir, ensure_preferred_proxy_env, read_text
 
 _DOCX_NS = {
@@ -40,6 +41,8 @@ _PPT_NS = {
 }
 
 _HTTP_RETRY_STATUS_CODES = {408, 429, 500, 502, 503, 504}
+_BRAVE_SEARCH_ENDPOINT = "https://api.search.brave.com/res/v1/web/search"
+_SERPER_SEARCH_ENDPOINT = "https://google.serper.dev/search"
 _WHISPER_LANGUAGE_ALIASES = {
     "english": "en",
     "en": "en",
@@ -80,6 +83,10 @@ ATOMIC_V2_TOOL_NAMES = [
     "run_python",
 ]
 
+ATOMIC_V4_TOOL_NAMES = [
+    name for name in ATOMIC_V2_TOOL_NAMES if name != "read_json_file"
+]
+
 REAGENT_FACADE_V3_TOOL_NAMES = [
     "search",
     "browse",
@@ -97,17 +104,29 @@ _REAGENT_PROFILE_ALIASES = {
     "v3",
 }
 
+_ATOMIC_V4_PROFILE_ALIASES = {
+    "atomic_v4",
+    "tool_v4",
+    "tool-gaia-v4",
+    "gaia_v4",
+    "v4",
+}
+
 
 def normalize_tool_profile(profile: str | None) -> str:
     cleaned = (profile or "atomic_v2").strip().lower()
     if cleaned in _REAGENT_PROFILE_ALIASES:
         return "reagent_facade_v3"
+    if cleaned in _ATOMIC_V4_PROFILE_ALIASES:
+        return "atomic_v4"
     return "atomic_v2"
 
 
 def available_tool_names_for_profile(profile: str | None) -> list[str]:
     if normalize_tool_profile(profile) == "reagent_facade_v3":
         return list(REAGENT_FACADE_V3_TOOL_NAMES)
+    if normalize_tool_profile(profile) == "atomic_v4":
+        return list(ATOMIC_V4_TOOL_NAMES)
     return list(ATOMIC_V2_TOOL_NAMES)
 
 
@@ -222,6 +241,7 @@ class ToolContext:
 class Toolbox:
     def __init__(self, context: ToolContext):
         ensure_preferred_proxy_env()
+        apply_search_runtime_env()
         self.context = context
         self._registry: dict[str, ToolSpec] = {}
         self.active_skill_dir: Path | None = None
@@ -1426,8 +1446,119 @@ class Toolbox:
             "warnings": [],
         }
 
-    def web_search(self, query: str, max_results: int | None = None) -> list[dict[str, Any]]:
-        limit = max_results or self.context.search_results_limit
+    def _brave_web_search(self, query: str, limit: int) -> list[dict[str, Any]]:
+        api_key = (
+            os.environ.get("NLRL_BRAVE_SEARCH_API_KEY", "").strip()
+            or os.environ.get("BRAVE_SEARCH_API_KEY", "").strip()
+        )
+        if not api_key:
+            raise RuntimeError("NLRL_WEB_SEARCH_PROVIDER=brave requires NLRL_BRAVE_SEARCH_API_KEY.")
+        endpoint = os.environ.get("NLRL_BRAVE_SEARCH_ENDPOINT", "").strip() or _BRAVE_SEARCH_ENDPOINT
+        timeout = float(os.environ.get("NLRL_BRAVE_SEARCH_TIMEOUT_SECONDS", "").strip() or "30")
+        params = {
+            "q": query,
+            "count": max(1, min(int(limit), 20)),
+            "safesearch": os.environ.get("NLRL_BRAVE_SEARCH_SAFESEARCH", "").strip() or "moderate",
+        }
+        country = os.environ.get("NLRL_BRAVE_SEARCH_COUNTRY", "").strip()
+        if country:
+            params["country"] = country
+        response = requests.get(
+            endpoint,
+            params=params,
+            timeout=timeout,
+            headers={"Accept": "application/json", "X-Subscription-Token": api_key},
+        )
+        response.raise_for_status()
+        payload = response.json()
+        results: list[dict[str, Any]] = []
+        for item in (payload.get("web") or {}).get("results") or []:
+            results.append(
+                {
+                    "title": str(item.get("title", "")),
+                    "href": self._normalize_search_href(str(item.get("url", ""))),
+                    "body": str(item.get("description", "")),
+                }
+            )
+        return results
+
+    def _serper_api_keys(self) -> list[str]:
+        raw_keys = os.environ.get("NLRL_SERPER_API_KEYS", "").strip()
+        keys: list[str] = []
+        if raw_keys:
+            try:
+                parsed = json.loads(raw_keys)
+            except json.JSONDecodeError:
+                parsed = None
+            if isinstance(parsed, list):
+                keys.extend(str(item).strip() for item in parsed if str(item).strip())
+            else:
+                keys.extend(item.strip() for item in re.split(r"[\s,]+", raw_keys) if item.strip())
+        single_key = os.environ.get("NLRL_SERPER_API_KEY", "").strip()
+        if single_key:
+            keys.insert(0, single_key)
+        seen: set[str] = set()
+        return [key for key in keys if not (key in seen or seen.add(key))]
+
+    @staticmethod
+    def _is_serper_key_error(response: requests.Response) -> bool:
+        body = response.text[:2000].lower()
+        if "not enough credits" in body:
+            return True
+        if "invalid api key" in body or "invalid x-api-key" in body:
+            return True
+        if response.status_code in {401, 403}:
+            return True
+        return False
+
+    def _serper_web_search(self, query: str, limit: int) -> list[dict[str, Any]]:
+        api_keys = self._serper_api_keys()
+        if not api_keys:
+            raise RuntimeError("NLRL_WEB_SEARCH_PROVIDER=serper requires NLRL_SERPER_API_KEY or NLRL_SERPER_API_KEYS.")
+        endpoint = os.environ.get("NLRL_SERPER_SEARCH_ENDPOINT", "").strip() or _SERPER_SEARCH_ENDPOINT
+        timeout = float(os.environ.get("NLRL_SERPER_SEARCH_TIMEOUT_SECONDS", "").strip() or "30")
+        last_error: Exception | None = None
+        for index, api_key in enumerate(api_keys):
+            try:
+                response = requests.post(
+                    endpoint,
+                    json={
+                        "q": query,
+                        "num": max(1, int(limit)),
+                    },
+                    timeout=timeout,
+                    headers={
+                        "X-API-KEY": api_key,
+                        "Content-Type": "application/json",
+                    },
+                )
+                if response.status_code >= 400:
+                    if index < len(api_keys) - 1 and self._is_serper_key_error(response):
+                        last_error = requests.HTTPError(
+                            f"Serper key rejected with status {response.status_code}: {response.text[:300]}",
+                            response=response,
+                        )
+                        continue
+                    response.raise_for_status()
+                break
+            except requests.RequestException as exc:
+                last_error = exc
+                raise
+        else:
+            raise RuntimeError(f"All configured Serper API keys failed: {last_error}") from last_error
+        payload = response.json()
+        results: list[dict[str, Any]] = []
+        for item in payload.get("organic") or []:
+            results.append(
+                {
+                    "title": str(item.get("title", "")),
+                    "href": self._normalize_search_href(str(item.get("link", ""))),
+                    "body": str(item.get("snippet", "")),
+                }
+            )
+        return results
+
+    def _duckduckgo_web_search(self, query: str, limit: int) -> list[dict[str, Any]]:
         results: list[dict[str, Any]] = []
         try:
             with DDGS() as ddgs:
@@ -1461,6 +1592,28 @@ class Toolbox:
                 if len(results) >= limit:
                     break
         return results
+
+    def web_search(self, query: str, max_results: int | None = None) -> list[dict[str, Any]]:
+        limit = max_results or self.context.search_results_limit
+        provider = os.environ.get("NLRL_WEB_SEARCH_PROVIDER", "").strip().lower()
+        fallback = os.environ.get("NLRL_WEB_SEARCH_FALLBACK_PROVIDER", "").strip().lower()
+        if provider == "brave":
+            try:
+                return self._brave_web_search(query, limit)
+            except Exception:
+                if fallback in {"ddg", "duckduckgo"}:
+                    return self._duckduckgo_web_search(query, limit)
+                raise
+        if provider == "serper":
+            try:
+                return self._serper_web_search(query, limit)
+            except Exception:
+                if fallback in {"ddg", "duckduckgo"}:
+                    return self._duckduckgo_web_search(query, limit)
+                raise
+        if provider and provider not in {"ddg", "duckduckgo"}:
+            raise RuntimeError(f"Unsupported NLRL_WEB_SEARCH_PROVIDER={provider!r}.")
+        return self._duckduckgo_web_search(query, limit)
 
     @staticmethod
     def _normalize_search_href(href: str) -> str:

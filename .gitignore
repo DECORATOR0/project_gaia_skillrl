@@ -25,3 +25,9 @@ external_refs/gaia-agent/
 /sales_data.csv
 /extracted/
 /fiedler_2002.pdf
+
+# Local task scratch artifacts
+/tmp/
+/*.pdf
+/*.xlsx
+/words_alpha.txt

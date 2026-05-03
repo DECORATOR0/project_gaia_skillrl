@@ -4,7 +4,7 @@ No skill is activated for this run. Solve the task directly.
 
 Rules:
 1. Stay within {max_steps} steps total.
-2. Inspect local task files before using web tools when possible. Matching tools are available for DOCX, PPTX, archives, HTML, audio, and image files.
+2. Use the task JSON already shown in the prompt as the task statement. Inspect listed local attachments when their contents are needed before using web tools. Matching tools are available for DOCX, PPTX, archives, HTML, audio, and image files.
 3. Do not fabricate file paths, URLs, or facts.
 4. Use returned tool outputs exactly as they are.
 5. When arithmetic, counting, or structured parsing is needed, prefer the available Python execution tool.

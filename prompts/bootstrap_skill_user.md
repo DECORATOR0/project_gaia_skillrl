@@ -11,14 +11,16 @@ Use the runtime contract as the hard execution boundary and the batch snapshot a
 Design requirements:
 - Create a common preface followed by phase-local instructions.
 - Let the phase graph express reusable control flow for GAIA tasks.
-- Keep the final answer path legal for the runtime.
+- Keep the final answer path legal for the runtime without adding a dedicated answer-only phase.
 - Keep node-local instructions concise enough for `qwen3-8b`.
 - Keep executed paths short for simple tasks and allow longer paths only when the task actually needs more evidence, computation, verification, or repair.
 - Include a bounded repair path.
-- Do not make the final answer phase a blanket exit from all phases.
-- Direct `CONCLUDE` edges should be limited and conditionally described. Use them only where a final answer may become ready with full support and exact formatting.
+- Do not create a `CONCLUDE` phase or any other answer-only finalization phase.
+- Treat final answering as a global executor stop action: if the current evidence determines the final answer, the executor stops; otherwise it continues with a phase-local tool call or transition.
+- Do not add phase-local rules such as "do not answer in this phase" or "only a specific phase may answer."
+- Direct answer-ready terminal states should be limited and conditionally described. Use them only where a final answer may become ready with full support and exact formatting.
 - For phases that gather web/local/media evidence or perform partial reasoning, prefer a path through verification or computation unless the phase can already guarantee a concrete supported final string.
-- In `INIT`, a direct edge to `CONCLUDE` should be rare and reserved for genuinely prompt-only, low-risk answers.
+- In `INIT`, answer-ready terminal behavior should be rare and reserved for genuinely prompt-only, low-risk answers.
 
 Do not overfit to the batch:
 - Do not include task IDs.
