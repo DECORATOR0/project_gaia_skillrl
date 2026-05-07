@@ -34,6 +34,18 @@ class LLMCallResult:
 
 _SEMAPHORE_LOCK = Lock()
 _REQUEST_SEMAPHORES: dict[int, BoundedSemaphore] = {}
+_TOKENIZER_LOCK = Lock()
+_TOKENIZER_CACHE: dict[str, Any] = {}
+
+_DEFAULT_TOKENIZER_PATHS = {
+    "qwen3-8b-local": "/data/xsy/codes/checkpoints/Qwen3-8B",
+    "qwen3.5-9b-local": "/data/xsy/codes/checkpoints/Qwen3.5-9B",
+}
+_DEFAULT_MAX_MODEL_LENS = {
+    "qwen3-8b-local": 40960,
+    "qwen3.5-9b-local": 49152,
+}
+_TOKEN_GUARD_MARKER = "\n\n[truncated by token guard]"
 
 
 def _shared_request_semaphore(limit: int) -> BoundedSemaphore:
@@ -83,6 +95,196 @@ class OpenAICompatibleLLM:
         if limits is not None:
             client_kwargs["limits"] = limits
         return httpx.Client(**client_kwargs)
+
+    def _served_model_key(self) -> str:
+        return self.config.model.strip().lower()
+
+    def _infer_tokenizer_path(self) -> str:
+        if self.config.tokenizer_path.strip():
+            return self.config.tokenizer_path.strip()
+        return _DEFAULT_TOKENIZER_PATHS.get(self._served_model_key(), "")
+
+    def _infer_max_model_len(self) -> int:
+        if self.config.max_model_len > 0:
+            return self.config.max_model_len
+        return _DEFAULT_MAX_MODEL_LENS.get(self._served_model_key(), 0)
+
+    def _load_tokenizer(self, tokenizer_path: str) -> Any:
+        with _TOKENIZER_LOCK:
+            tokenizer = _TOKENIZER_CACHE.get(tokenizer_path)
+            if tokenizer is not None:
+                return tokenizer
+            try:
+                from transformers import AutoTokenizer
+            except ModuleNotFoundError as exc:
+                raise RuntimeError(
+                    "Token guard requires transformers. Install project dependencies or run "
+                    "`/data/xsy/project_gaia_skillrl/.venv/bin/python -m pip install transformers`."
+                ) from exc
+            tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=True)
+            _TOKENIZER_CACHE[tokenizer_path] = tokenizer
+            return tokenizer
+
+    def _payload_chat_template_kwargs(self, payload: dict[str, Any]) -> dict[str, Any]:
+        kwargs = dict(payload.get("chat_template_kwargs") or {})
+        if "enable_thinking" not in kwargs and "enable_thinking" in payload:
+            kwargs["enable_thinking"] = payload["enable_thinking"]
+        return kwargs
+
+    def _prompt_token_count(
+        self,
+        tokenizer: Any,
+        messages: list[dict[str, str]],
+        chat_template_kwargs: dict[str, Any],
+    ) -> int:
+        encoded = tokenizer.apply_chat_template(
+            messages,
+            tokenize=True,
+            add_generation_prompt=True,
+            **chat_template_kwargs,
+        )
+        if hasattr(encoded, "get") and encoded.get("input_ids") is not None:
+            input_ids = encoded["input_ids"]
+        else:
+            input_ids = encoded
+        if input_ids and isinstance(input_ids[0], list):
+            return len(input_ids[0])
+        return len(input_ids)
+
+    def _truncate_message_to_token_budget(
+        self,
+        *,
+        tokenizer: Any,
+        messages: list[dict[str, str]],
+        index: int,
+        budget: int,
+        chat_template_kwargs: dict[str, Any],
+    ) -> tuple[list[dict[str, str]], int]:
+        original = str(messages[index].get("content", ""))
+        best_messages: list[dict[str, str]] | None = None
+        best_tokens = 0
+        low = 0
+        high = len(original)
+        while low <= high:
+            mid = (low + high) // 2
+            candidate = [dict(message) for message in messages]
+            if mid >= len(original):
+                content = original
+            else:
+                content = original[:mid] + _TOKEN_GUARD_MARKER
+            candidate[index] = dict(candidate[index], content=content)
+            token_count = self._prompt_token_count(tokenizer, candidate, chat_template_kwargs)
+            if token_count <= budget:
+                best_messages = candidate
+                best_tokens = token_count
+                low = mid + 1
+            else:
+                high = mid - 1
+        if best_messages is None:
+            candidate = [dict(message) for message in messages]
+            candidate[index] = dict(candidate[index], content=_TOKEN_GUARD_MARKER.strip())
+            best_tokens = self._prompt_token_count(tokenizer, candidate, chat_template_kwargs)
+            best_messages = candidate
+        return best_messages, best_tokens
+
+    def _apply_token_guard(self, payload: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any] | None]:
+        tokenizer_path = self._infer_tokenizer_path()
+        max_model_len = self._infer_max_model_len()
+        if not tokenizer_path or max_model_len <= 0 or "messages" not in payload:
+            return payload, None
+
+        max_tokens = int(payload.get("max_tokens") or 0)
+        safety_margin = max(0, int(self.config.token_guard_safety_margin))
+        prompt_budget = max_model_len - max_tokens - safety_margin
+        if prompt_budget <= 0:
+            raise RuntimeError(
+                f"Token guard has no prompt budget: max_model_len={max_model_len}, "
+                f"max_tokens={max_tokens}, safety_margin={safety_margin}."
+            )
+
+        tokenizer = self._load_tokenizer(tokenizer_path)
+        chat_template_kwargs = self._payload_chat_template_kwargs(payload)
+        messages = [dict(message) for message in payload["messages"]]
+        initial_tokens = self._prompt_token_count(tokenizer, messages, chat_template_kwargs)
+        metadata: dict[str, Any] = {
+            "enabled": True,
+            "tokenizer_path": tokenizer_path,
+            "max_model_len": max_model_len,
+            "max_tokens_reserved": max_tokens,
+            "safety_margin": safety_margin,
+            "prompt_token_budget": prompt_budget,
+            "initial_prompt_tokens": initial_tokens,
+            "final_prompt_tokens": initial_tokens,
+            "dropped_message_count": 0,
+            "dropped_message_chars": 0,
+            "truncated_message_roles": [],
+        }
+        if initial_tokens <= prompt_budget:
+            return payload, metadata
+
+        fitted = messages
+        while len(fitted) > 2:
+            current_tokens = self._prompt_token_count(tokenizer, fitted, chat_template_kwargs)
+            if current_tokens <= prompt_budget:
+                metadata["final_prompt_tokens"] = current_tokens
+                break
+            dropped = fitted.pop(2)
+            metadata["dropped_message_count"] += 1
+            metadata["dropped_message_chars"] += len(str(dropped.get("content", "")))
+        else:
+            current_tokens = self._prompt_token_count(tokenizer, fitted, chat_template_kwargs)
+            metadata["final_prompt_tokens"] = current_tokens
+
+        if metadata["final_prompt_tokens"] > prompt_budget and len(fitted) >= 2:
+            fitted, final_tokens = self._truncate_message_to_token_budget(
+                tokenizer=tokenizer,
+                messages=fitted,
+                index=1,
+                budget=prompt_budget,
+                chat_template_kwargs=chat_template_kwargs,
+            )
+            metadata["final_prompt_tokens"] = final_tokens
+            metadata["truncated_message_roles"].append(fitted[1].get("role", "user"))
+
+        if metadata["final_prompt_tokens"] > prompt_budget and fitted:
+            fitted, final_tokens = self._truncate_message_to_token_budget(
+                tokenizer=tokenizer,
+                messages=fitted,
+                index=0,
+                budget=prompt_budget,
+                chat_template_kwargs=chat_template_kwargs,
+            )
+            metadata["final_prompt_tokens"] = final_tokens
+            metadata["truncated_message_roles"].append(fitted[0].get("role", "system"))
+
+        if metadata["final_prompt_tokens"] > prompt_budget:
+            raise RuntimeError(
+                f"Token guard failed to fit prompt: final_prompt_tokens={metadata['final_prompt_tokens']}, "
+                f"budget={prompt_budget}, max_model_len={max_model_len}, max_tokens={max_tokens}."
+            )
+
+        guarded_payload = dict(payload)
+        guarded_payload["messages"] = fitted
+        _llm_logger.warning(
+            "[%s] token guard trimmed prompt %d -> %d tokens; budget=%d; dropped_messages=%d",
+            self.config.name,
+            initial_tokens,
+            metadata["final_prompt_tokens"],
+            prompt_budget,
+            metadata["dropped_message_count"],
+        )
+        return guarded_payload, metadata
+
+    def _request_payload_for_log(
+        self,
+        payload: dict[str, Any],
+        token_guard: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        if not token_guard:
+            return payload
+        log_payload = dict(payload)
+        log_payload["_token_guard"] = token_guard
+        return log_payload
 
     def _rebuild_client(self) -> None:
         if self._uses_codex_cli():
@@ -269,6 +471,11 @@ class OpenAICompatibleLLM:
             "stream": True,
             "input": conversation_input,
         }
+        payload["temperature"] = self.config.temperature
+        if self.config.max_tokens is not None:
+            payload["max_output_tokens"] = self.config.max_tokens
+        if self.config.reasoning_effort.strip():
+            payload["reasoning"] = {"effort": self.config.reasoning_effort.strip()}
         if instructions_parts:
             payload["instructions"] = "\n\n".join(instructions_parts)
         return payload
@@ -440,7 +647,11 @@ class OpenAICompatibleLLM:
                                 fragments.append(text)
         return "".join(fragments)
 
-    def _chat_stream(self, payload: dict[str, Any]) -> LLMCallResult:
+    def _chat_stream(
+        self,
+        payload: dict[str, Any],
+        token_guard: dict[str, Any] | None = None,
+    ) -> LLMCallResult:
         stream_payload = dict(payload)
         stream_payload["stream"] = True
         if self._include_stream_usage():
@@ -526,7 +737,7 @@ class OpenAICompatibleLLM:
                             "last_chunk": chunks[-1] if chunks else {},
                             "usage": usage,
                         },
-                        request_payload=stream_payload,
+                        request_payload=self._request_payload_for_log(stream_payload, token_guard),
                     )
                 except Exception as exc:
                     if response is not None:
@@ -552,8 +763,9 @@ class OpenAICompatibleLLM:
             payload = self._build_responses_payload(messages)
             return self._responses_chat(payload)
         payload = self._build_payload(messages, temperature=temperature, max_tokens=max_tokens)
+        payload, token_guard = self._apply_token_guard(payload)
         if self.config.stream:
-            return self._chat_stream(payload)
+            return self._chat_stream(payload, token_guard=token_guard)
         last_error: Exception | None = None
         response: httpx.Response | None = None
         with self._request_slot():
@@ -588,7 +800,11 @@ class OpenAICompatibleLLM:
                 if isinstance(item, dict)
             )
         text = re.sub(r"(?is)^```(?:json)?\s*|\s*```$", "", text or "").strip()
-        return LLMCallResult(text=text, raw_response=raw_response, request_payload=payload)
+        return LLMCallResult(
+            text=text,
+            raw_response=raw_response,
+            request_payload=self._request_payload_for_log(payload, token_guard),
+        )
 
     def _codex_cli_prompt(self, messages: list[LLMMessage]) -> str:
         blocks: list[str] = []

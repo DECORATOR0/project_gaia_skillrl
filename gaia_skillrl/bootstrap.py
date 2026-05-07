@@ -86,10 +86,97 @@ class SkillBootstrapper:
             "tasks": task_rows,
         }
 
+    def _cap_preprocess_note(self, note: str, question: str) -> str:
+        configured_cap = max(80, int(self.config.runtime.bootstrap_preprocess_note_char_cap))
+        question_cap = max(220, min(configured_cap, len(question.strip()) + 120))
+        cap = min(configured_cap, question_cap)
+        cleaned = " ".join(str(note).split())
+        if len(cleaned) <= cap:
+            return cleaned
+        return cleaned[: max(0, cap - 3)].rstrip() + "..."
+
+    def _preprocess_batch_payload(
+        self,
+        *,
+        runtime_contract: dict[str, Any],
+        batch_payload: dict[str, Any],
+        log_dir: Path,
+    ) -> dict[str, Any]:
+        if not self.config.runtime.bootstrap_task_preprocess:
+            return batch_payload
+
+        write_json(log_dir / "bootstrap_raw_batch_input.json", batch_payload)
+        note_char_cap = max(80, int(self.config.runtime.bootstrap_preprocess_note_char_cap))
+        system_prompt = render_prompt(self.config.prompt_root / "bootstrap_task_preprocess_system.md")
+        user_prompt = render_prompt(
+            self.config.prompt_root / "bootstrap_task_preprocess_user.md",
+            runtime_contract_json=json.dumps(runtime_contract, ensure_ascii=False, indent=2),
+            batch_tasks_json=json.dumps(batch_payload, ensure_ascii=False, indent=2),
+            note_char_cap=str(note_char_cap),
+        )
+        payload, llm_result = self.llm.chat_json(
+            [
+                LLMMessage(role="system", content=system_prompt),
+                LLMMessage(role="user", content=user_prompt),
+            ]
+        )
+        log_llm_call(log_dir, "bootstrap_task_preprocess", llm_result)
+        write_json(log_dir / "bootstrap_task_preprocess_response.json", payload)
+
+        raw_items = payload.get("items", [])
+        if not isinstance(raw_items, list):
+            raise ValueError("Bootstrap task preprocess response must include items as a list.")
+        notes_by_task_id: dict[str, str] = {}
+        for item in raw_items:
+            if not isinstance(item, dict):
+                continue
+            task_id = str(item.get("task_id", "")).strip()
+            note = str(item.get("preprocess_note", "")).strip()
+            if task_id and note:
+                notes_by_task_id[task_id] = note
+
+        preprocessed = dict(batch_payload)
+        rows: list[dict[str, Any]] = []
+        missing: list[str] = []
+        for row in batch_payload.get("tasks", []):
+            if not isinstance(row, dict):
+                continue
+            task_id = str(row.get("task_id", "")).strip()
+            updated = dict(row)
+            note = notes_by_task_id.get(task_id, "")
+            if note:
+                updated["preprocess_note"] = self._cap_preprocess_note(
+                    note,
+                    str(row.get("question", "")),
+                )
+            else:
+                missing.append(task_id)
+            rows.append(updated)
+        if missing:
+            raise ValueError(
+                "Bootstrap task preprocess response missed task_id values: "
+                + ", ".join(missing[:10])
+                + (" ..." if len(missing) > 10 else "")
+            )
+        preprocessed["tasks"] = rows
+        preprocessed["preprocess"] = {
+            "enabled": True,
+            "note_char_cap": note_char_cap,
+            "field": "preprocess_note",
+            "missing_count": len(missing),
+        }
+        write_json(log_dir / "bootstrap_preprocessed_batch_input.json", preprocessed)
+        return preprocessed
+
     def bootstrap(self, tasks: list[DatasetTask], log_dir: Path) -> dict[str, Any]:
         ensure_dir(log_dir)
         runtime_contract = self._runtime_contract()
-        batch_payload = self._batch_payload(tasks)
+        raw_batch_payload = self._batch_payload(tasks)
+        batch_payload = self._preprocess_batch_payload(
+            runtime_contract=runtime_contract,
+            batch_payload=raw_batch_payload,
+            log_dir=log_dir,
+        )
         write_json(
             log_dir / "bootstrap_input.json",
             {

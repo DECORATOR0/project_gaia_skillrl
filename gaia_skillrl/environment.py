@@ -175,9 +175,10 @@ class SkillEnvironment:
             config.prompt_root,
             self.toolbox,
             max_context_chars=config.runtime.max_context_chars,
+            hide_stale_phase_prompts=config.runtime.hide_stale_phase_prompts,
         )
 
-    def _build_initial_prompt(self, task: DatasetTask, skill: SkillDetail, init_phase: SkillPhase) -> str:
+    def _build_task_prompt(self, task: DatasetTask, skill: SkillDetail) -> str:
         task_info = json.dumps(
             {
                 "task_id": task.task_id,
@@ -195,8 +196,7 @@ class SkillEnvironment:
             f"## Task\n\n{task_info}\n\n"
             f"## Activated Skill: {skill.header.name}\n\n"
             f"Description: {skill.header.description}\n\n"
-            f"Bundled resources: {resources_list}\n\n"
-            f"{_phase_prompt('INIT', init_phase.content)}"
+            f"Bundled resources: {resources_list}"
         )
 
     def run(self, task: DatasetTask, active_skill: SkillDetail, run_dir: Path) -> EnvState:
@@ -210,7 +210,8 @@ class SkillEnvironment:
             phase_list=phase_names,
         )
         init_phase = phases["INIT"]
-        initial_prompt = self._build_initial_prompt(task, active_skill, init_phase)
+        initial_prompt = self._build_task_prompt(task, active_skill)
+        initial_phase_prompt = _phase_prompt("INIT", init_phase.content)
         if "CONCLUDE" in phases:
             resolved_conclude_prompt = _phase_prompt("CONCLUDE", phases["CONCLUDE"].content)
             fallback_conclude_prompt = (
@@ -228,6 +229,7 @@ class SkillEnvironment:
                 role_name="executor",
                 system_prompt=system_prompt,
                 initial_user_prompt=initial_prompt,
+                initial_phase_prompt=initial_phase_prompt,
                 phases=phases,
                 allowed_tools=active_skill.header.allowed_tools or None,
                 max_steps=self.config.runtime.max_executor_steps,

@@ -74,6 +74,18 @@
 - `2023_GAIA_a_benchmark_for_General_AI_Assistants.pdf`
 - `2026_Gaia2_Benchmarking_LLM_Agents_on_Dynamic_and_Asynchronous_Environments.pdf`
 
+### 05_Skill_Benchmark_与_EvoSkill
+
+这一类用于存放近期换 benchmark、对齐 skill 论文和复现实验时直接讨论到的论文 PDF。后续凡是在实验文档里被反复引用、需要跟用户讨论口径或复现实验设置的论文，优先把 PDF 落到这里或新增同级主题目录。
+
+文件列表：
+
+- `2026_EvoSkill_Automated_Skill_Discovery_for_Multi_Agent_Systems.pdf`
+- `2026_OfficeQA_End_to_End_Grounded_Reasoning.pdf`
+- `2025_SealQA_Search_Augmented_Language_Model_Benchmark.pdf`
+- `2025_BrowseComp_A_Simple_Yet_Challenging_Benchmark_for_Browsing_Agents.pdf`
+- `2025_SkillsBench_Benchmarking_Agent_Skills.pdf`
+
 ## 当前用途
 
 本目录服务于下面这份调研文档：
@@ -86,3 +98,5 @@
 2. 再读 `02_层级强化学习_选项_技能`
 3. 然后读 `01_状态机_有限状态控制器_行为树`
 4. 最后读 `03_LLM_Agent_技能库_自改进`
+
+新增 benchmark 对齐讨论时，先读 `05_Skill_Benchmark_与_EvoSkill`，再回到具体实验文档。

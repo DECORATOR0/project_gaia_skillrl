@@ -69,6 +69,7 @@ def build_experiment_specs(
         "NLRL_EXECUTOR_API_MODE": os.environ.get("GAIA_SSSAI_EXECUTOR_API_MODE", "responses_sse"),
         "NLRL_EXECUTOR_STREAM": os.environ.get("GAIA_SSSAI_EXECUTOR_STREAM", "1"),
         "NLRL_EXECUTOR_TIMEOUT_SECONDS": os.environ.get("GAIA_SSSAI_EXECUTOR_TIMEOUT_SECONDS", "420"),
+        "NLRL_EXECUTOR_REASONING_EFFORT": os.environ.get("GAIA_SSSAI_EXECUTOR_REASONING_EFFORT", "xhigh"),
     }
 
     direct_8b_env = {

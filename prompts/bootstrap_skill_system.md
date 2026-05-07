@@ -37,12 +37,15 @@ Progressive disclosure design:
 - Each phase must be locally sufficient when injected on its own.
 - Each phase should include `Goal`, `Allowed tools`, `Rules`, `Exit handoff`, `Available actions`, and `Next`.
 - `Exit handoff` should state what the phase passes forward, such as route decision, evidence, candidate answer, format requirement, or blocking issue.
-- Write phase-local rules as continuation guidance for cases where the final answer is not yet determined.
-- Do not write phase-local rules that forbid answering from work phases or reserve answers for a named phase.
-- In `INIT`, `Available actions` may include concrete calls using the file-inspection tools listed in the runtime contract.
-- In other phases, keep tool choice in `Rules` and keep `Available actions` focused on legal tags and transitions unless a concrete call is always safe.
-- Do not list `<ANSWER>` as a routine action in every phase; keep phase actions focused on tools and legal transitions.
+- Treat `Allowed tools` as the hard per-phase tool allowlist. A phase may call only tools named in its own `Allowed tools` line.
+- Treat `Available actions` as a compact legal action menu, not a catalogue of every possible call. It should say that the executor may call one currently allowed tool, move to one legal `Next` phase, or answer only when the evidence is fully sufficient under the global answer policy.
+- Use `Rules` for node-local operating guidance: how to choose among allowed tools, what evidence or computation is worth doing in this phase, common pitfalls, answer-readiness checks, and when to transition.
+- Keep tool-selection experience in `Rules`. Avoid hardcoded concrete tool-call examples unless the call is universally safe in that phase and uses no invented filenames, URLs, paths, or task-specific placeholders.
+- Phase names are not answer gates. A phase may still say what evidence must be true before answering, and may say that low-support or partial-evidence states should transition instead of answering.
+- Write `Rules` densely enough to be useful for a small executor model. For major work phases, prefer roughly 250-600 words when the guidance is substantive; shorter routing phases can be shorter. Do not pad with generic slogans.
 
 Do not put invented filenames, fake URLs, example HTML, dummy Python snippets, or task-specific placeholders inside tool-call examples. For attachments and web pages, tell the executor to use actual filenames and URLs from the task or tool results.
 
 Use the batch snapshot to infer reusable coverage and answer styles. You may look at gold answers during this training-time bootstrap to understand answer shapes, but do not write task IDs, task-specific answers, fixed named facts, or fixed URLs into the skill.
+
+If task rows include `preprocess_note`, treat it as a compact training-time annotation about likely workflow, tool order, and formatting pressure. Use those notes to infer reusable phase-local `Rules`, but do not copy individual notes, task IDs, task-specific answers, fixed named facts, or fixed URLs into the skill.

@@ -20,6 +20,10 @@ class LLMConfig:
     timeout_seconds: int = 180
     enable_thinking: bool | None = None
     thinking_token_budget: int | None = None
+    reasoning_effort: str = ""
+    tokenizer_path: str = ""
+    max_model_len: int = 0
+    token_guard_safety_margin: int = 512
     stream: bool = False
 
 
@@ -51,6 +55,10 @@ class RuntimeConfig:
     web_fetch_char_limit: int = 6000
     critic_strategy: str = "full"
     critic_shard_size: int = 12
+    actor_graph_edit_policy: str = "locked"
+    hide_stale_phase_prompts: bool = False
+    bootstrap_task_preprocess: bool = False
+    bootstrap_preprocess_note_char_cap: int = 700
 
 
 @dataclass
@@ -133,6 +141,10 @@ def _llm_from_dict(name: str, data: dict[str, Any]) -> LLMConfig:
     shared_max_tokens = _env_override("NLRL_LLM_MAX_TOKENS")
     shared_enable_thinking = _env_override("NLRL_LLM_ENABLE_THINKING")
     shared_thinking_token_budget = _env_override("NLRL_LLM_THINKING_TOKEN_BUDGET", "NLRL_LLM_THINKING_BUDGET")
+    shared_reasoning_effort = _env_override("NLRL_LLM_REASONING_EFFORT", "NLRL_LLM_REASONING")
+    shared_tokenizer_path = _env_override("NLRL_LLM_TOKENIZER_PATH")
+    shared_max_model_len = _env_override("NLRL_LLM_MAX_MODEL_LEN")
+    shared_token_guard_safety_margin = _env_override("NLRL_LLM_TOKEN_GUARD_SAFETY_MARGIN")
     shared_stream = _env_override("NLRL_LLM_STREAM")
 
     raw_max_tokens = data.get("max_tokens")
@@ -164,6 +176,19 @@ def _llm_from_dict(name: str, data: dict[str, Any]) -> LLMConfig:
     elif raw_thinking_token_budget is not None:
         thinking_token_budget = int(raw_thinking_token_budget)
 
+    max_model_len_raw = (
+        _env_override(f"{role_prefix}_MAX_MODEL_LEN")
+        or shared_max_model_len
+        or data.get("max_model_len")
+        or 0
+    )
+    token_guard_safety_margin_raw = (
+        _env_override(f"{role_prefix}_TOKEN_GUARD_SAFETY_MARGIN")
+        or shared_token_guard_safety_margin
+        or data.get("token_guard_safety_margin")
+        or 512
+    )
+
     stream_raw = _env_override(f"{role_prefix}_STREAM") or shared_stream
     if stream_raw is not None:
         stream = stream_raw.strip().lower() in {"1", "true", "yes", "on"}
@@ -181,6 +206,20 @@ def _llm_from_dict(name: str, data: dict[str, Any]) -> LLMConfig:
         timeout_seconds=int(_env_override(f"{role_prefix}_TIMEOUT_SECONDS") or shared_timeout or data.get("timeout_seconds", 180)),
         enable_thinking=enable_thinking,
         thinking_token_budget=thinking_token_budget,
+        reasoning_effort=str(
+            _env_override(f"{role_prefix}_REASONING_EFFORT", f"{role_prefix}_REASONING")
+            or shared_reasoning_effort
+            or data.get("reasoning_effort", data.get("reasoning", ""))
+            or ""
+        ),
+        tokenizer_path=str(
+            _env_override(f"{role_prefix}_TOKENIZER_PATH")
+            or shared_tokenizer_path
+            or data.get("tokenizer_path", "")
+            or ""
+        ),
+        max_model_len=int(max_model_len_raw),
+        token_guard_safety_margin=int(token_guard_safety_margin_raw),
         stream=stream,
     )
 
@@ -203,6 +242,10 @@ def load_system_config(path: str | Path) -> SystemConfig:
         "web_fetch_char_limit": _env_override("NLRL_RUNTIME_WEB_FETCH_CHAR_LIMIT"),
         "critic_strategy": _env_override("NLRL_RUNTIME_CRITIC_STRATEGY"),
         "critic_shard_size": _env_override("NLRL_RUNTIME_CRITIC_SHARD_SIZE"),
+        "actor_graph_edit_policy": _env_override("NLRL_RUNTIME_ACTOR_GRAPH_EDIT_POLICY"),
+        "hide_stale_phase_prompts": _env_override("NLRL_RUNTIME_HIDE_STALE_PHASE_PROMPTS"),
+        "bootstrap_task_preprocess": _env_override("NLRL_RUNTIME_BOOTSTRAP_TASK_PREPROCESS"),
+        "bootstrap_preprocess_note_char_cap": _env_override("NLRL_RUNTIME_BOOTSTRAP_PREPROCESS_NOTE_CHAR_CAP"),
     }
     for key, value in runtime_env_overrides.items():
         if value is None:
@@ -215,9 +258,14 @@ def load_system_config(path: str | Path) -> SystemConfig:
             "search_results_limit",
             "web_fetch_char_limit",
             "critic_shard_size",
+            "bootstrap_preprocess_note_char_cap",
         }:
             runtime_raw[key] = int(value)
-        elif key in {"bootstrap_initial_skill"}:
+        elif key in {
+            "bootstrap_initial_skill",
+            "hide_stale_phase_prompts",
+            "bootstrap_task_preprocess",
+        }:
             runtime_raw[key] = value.strip().lower() in {"1", "true", "yes", "on"}
         else:
             runtime_raw[key] = value

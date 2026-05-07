@@ -38,6 +38,14 @@ ALLOW_PARTIAL_TAIL = os.environ.get("GAIA_FRESH_QUEUE_ALLOW_PARTIAL_TAIL", "1").
     "no",
 }
 TAIL_GRACE_POLLS = int(os.environ.get("GAIA_FRESH_QUEUE_TAIL_GRACE_POLLS", "3"))
+SERIALIZE_EVAL_WAVES = os.environ.get(
+    "GAIA_FRESH_QUEUE_SERIALIZE_EVAL_WAVES", "0"
+).strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
 RUN_PREFIX = os.environ.get("GAIA_FRESH_QUEUE_PREFIX", "").strip() or datetime.now().strftime(
     "%Y%m%d_%H%M%S"
 )
@@ -56,12 +64,19 @@ B_TEST_RUN_NAME = f"{RUN_PREFIX}_fresh_bootv3_B_sharded_test_eval_{CONCURRENCY_L
 QUEUE_NAME = f"{RUN_PREFIX}_fresh_bootstrap_ab_tail_queue_{CONCURRENCY_LABEL}"
 
 REMOTE_EXECUTOR_BASE_URL = os.environ.get("GAIA_ARCHV5_REMOTE_EXECUTOR_BASE_URL", "").strip()
+REMOTE_EXECUTOR_BASE_URLS = [
+    item.strip()
+    for item in os.environ.get("GAIA_ARCHV5_REMOTE_EXECUTOR_BASE_URLS", "").split(",")
+    if item.strip()
+]
 REMOTE_EXECUTOR_LANES = max(1, int(os.environ.get("GAIA_ARCHV5_REMOTE_EXECUTOR_LANES", "4")))
 EXECUTOR_MODEL = os.environ.get(
     "GAIA_ARCHV5_EXECUTOR_MODEL",
-    "qwen3.5-9b" if REMOTE_EXECUTOR_BASE_URL else "Qwen3-8B-local",
+    "qwen3.5-9b" if (REMOTE_EXECUTOR_BASE_URL or REMOTE_EXECUTOR_BASE_URLS) else "Qwen3-8B-local",
 ).strip()
-if REMOTE_EXECUTOR_BASE_URL:
+if REMOTE_EXECUTOR_BASE_URLS:
+    LANES = {f"remote{idx}": url for idx, url in enumerate(REMOTE_EXECUTOR_BASE_URLS)}
+elif REMOTE_EXECUTOR_BASE_URL:
     LANES = {f"remote{idx}": REMOTE_EXECUTOR_BASE_URL for idx in range(REMOTE_EXECUTOR_LANES)}
 else:
     LANES = {
@@ -110,6 +125,7 @@ class TrainJob:
     strategy: str = "full"
     process: subprocess.Popen[str] | None = None
     log_path: Path | None = None
+    terminal_status: str | None = None
 
 
 def now() -> str:
@@ -136,8 +152,10 @@ def selected_env(env: dict[str, str]) -> dict[str, str]:
         "NLRL_RUNTIME_ITERATIONS_PER_BATCH",
         "NLRL_RUNTIME_INITIAL_SKILL_PATH",
         "NLRL_RUNTIME_BOOTSTRAP_INITIAL_SKILL",
+        "NLRL_RUNTIME_MAX_CONTEXT_CHARS",
         "NLRL_RUNTIME_CRITIC_STRATEGY",
         "NLRL_RUNTIME_CRITIC_SHARD_SIZE",
+        "NLRL_RUNTIME_TOOL_PROFILE",
         "NLRL_ACTOR_MODEL",
         "NLRL_ACTOR_BASE_URL",
         "NLRL_ACTOR_API_KEY",
@@ -158,6 +176,11 @@ def selected_env(env: dict[str, str]) -> dict[str, str]:
         "NLRL_EXECUTOR_API_MODE",
         "NLRL_EXECUTOR_STREAM",
         "NLRL_EXECUTOR_ENABLE_THINKING",
+        "NLRL_EXECUTOR_THINKING_TOKEN_BUDGET",
+        "NLRL_EXECUTOR_MAX_TOKENS",
+        "NLRL_EXECUTOR_TOKENIZER_PATH",
+        "NLRL_EXECUTOR_MAX_MODEL_LEN",
+        "NLRL_EXECUTOR_TOKEN_GUARD_SAFETY_MARGIN",
         "NLRL_EXECUTOR_TEMPERATURE",
         "NLRL_EXECUTOR_TIMEOUT_SECONDS",
         "NLRL_LLM_STREAM_WALL_TIMEOUT_SECONDS",
@@ -165,7 +188,14 @@ def selected_env(env: dict[str, str]) -> dict[str, str]:
         "NLRL_TOOL_BASE_URL",
         "NLRL_TOOL_API_KEY",
         "NLRL_TOOL_TIMEOUT_SECONDS",
+        "NLRL_TOOL_MODEL",
+        "NLRL_TOOL_AUDIO_MODEL",
+        "GAIA_SEARCH_RUNTIME_CONFIG",
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "NO_PROXY",
         "GAIA_ARCHV5_REMOTE_EXECUTOR_BASE_URL",
+        "GAIA_ARCHV5_REMOTE_EXECUTOR_BASE_URLS",
         "GAIA_ARCHV5_REMOTE_EXECUTOR_LANES",
         "GAIA_ARCHV5_EXECUTOR_MODEL",
         "GAIA_FRESH_QUEUE_SKIP_BOOTSTRAP_PREFLIGHT",
@@ -174,8 +204,10 @@ def selected_env(env: dict[str, str]) -> dict[str, str]:
         "GAIA_FRESH_QUEUE_TAIL_THRESHOLD",
         "GAIA_FRESH_QUEUE_ALLOW_PARTIAL_TAIL",
         "GAIA_FRESH_QUEUE_TAIL_GRACE_POLLS",
+        "GAIA_FRESH_QUEUE_SERIALIZE_EVAL_WAVES",
         "GAIA_FRESH_QUEUE_RESUME_BOOT_DEV_RUN_NAME",
         "GAIA_FRESH_QUEUE_RESUME_BOOT_SKILL_PATH",
+        "GAIA_FRESH_REQUIRE_CODEX_ACTOR",
         "GAIA_QUEUE_CLEANUP_SERVER_PIDS",
     ]
     return {key: env[key] for key in keys if key in env and env[key]}
@@ -278,7 +310,17 @@ def load_state(path: Path) -> EnvState:
 
 def latest_run_dir(run_name: str) -> Path | None:
     matches: list[Path] = []
-    for pattern in (f"**/{run_name}", f"**/*_{run_name}"):
+    patterns = [f"**/{run_name}", f"**/*_{run_name}"]
+    run_name_parts = run_name.split("_", 2)
+    if (
+        len(run_name_parts) == 3
+        and run_name_parts[0].isdigit()
+        and len(run_name_parts[0]) == 8
+        and run_name_parts[1].isdigit()
+        and len(run_name_parts[1]) in {4, 6}
+    ):
+        patterns.append(f"**/*_{run_name_parts[2]}")
+    for pattern in patterns:
         matches.extend(path for path in RUN_ROOT.glob(pattern) if path.is_dir())
     if not matches:
         return None
@@ -354,6 +396,7 @@ def stop_job(job: TrainJob, status: str) -> None:
     if process is None or process.poll() is not None:
         return
     try:
+        job.terminal_status = status
         os.killpg(process.pid, signal.SIGTERM)
         update_process_row(process.pid, status)
         log(f"stopped {job.key} pid={process.pid} status={status}")
@@ -429,6 +472,9 @@ def build_env(job: TrainJob) -> dict[str, str]:
             "NLRL_RUNTIME_ITERATIONS_PER_BATCH": str(job.iterations),
             "NLRL_RUNTIME_CRITIC_STRATEGY": job.strategy,
             "NLRL_RUNTIME_CRITIC_SHARD_SIZE": "12",
+            "NLRL_RUNTIME_ANSWER_ACCEPTANCE_POLICY": os.environ.get(
+                "NLRL_RUNTIME_ANSWER_ACCEPTANCE_POLICY", "any_phase"
+            ),
             "NLRL_EXECUTOR_MODEL": EXECUTOR_MODEL,
             "NLRL_EXECUTOR_BASE_URL": LANES[job.lane],
             "NLRL_EXECUTOR_API_KEY": "EMPTY",
@@ -436,19 +482,60 @@ def build_env(job: TrainJob) -> dict[str, str]:
             "NLRL_EXECUTOR_STREAM": "1",
             "NLRL_EXECUTOR_ENABLE_THINKING": "1",
             "NLRL_EXECUTOR_TEMPERATURE": "0.1",
-            "NLRL_EXECUTOR_TIMEOUT_SECONDS": "720",
-            "NLRL_LLM_STREAM_WALL_TIMEOUT_SECONDS": "720",
+            "NLRL_EXECUTOR_TIMEOUT_SECONDS": os.environ.get("NLRL_EXECUTOR_TIMEOUT_SECONDS", "1200"),
+            "NLRL_LLM_STREAM_WALL_TIMEOUT_SECONDS": os.environ.get(
+                "NLRL_LLM_STREAM_WALL_TIMEOUT_SECONDS", "1200"
+            ),
             "NLRL_EXECUTOR_STREAM_INCLUDE_USAGE": "1",
-            "NLRL_TOOL_BASE_URL": "http://35.220.164.252:3888/v1",
-            "NLRL_TOOL_API_KEY": "sk-JhritIDG3G8QxS6pPJ1kIfqxWorzSAZgHgkLz4EA0RgFl9lQ",
-            "NLRL_TOOL_TIMEOUT_SECONDS": "720",
+            "NLRL_TOOL_BASE_URL": os.environ.get("NLRL_TOOL_BASE_URL", "http://35.220.164.252:3888/v1"),
+            "NLRL_TOOL_API_KEY": os.environ.get(
+                "NLRL_TOOL_API_KEY",
+                "sk-JhritIDG3G8QxS6pPJ1kIfqxWorzSAZgHgkLz4EA0RgFl9lQ",
+            ),
+            "NLRL_TOOL_TIMEOUT_SECONDS": os.environ.get("NLRL_TOOL_TIMEOUT_SECONDS", "1200"),
+            "NLRL_TOOL_MODEL": os.environ.get("NLRL_TOOL_MODEL", "gpt-4o-mini"),
+            "NLRL_TOOL_AUDIO_MODEL": os.environ.get("NLRL_TOOL_AUDIO_MODEL", "gpt-4o-mini-transcribe"),
         }
     )
     if job.skill_path is not None:
         env["NLRL_RUNTIME_INITIAL_SKILL_PATH"] = str(job.skill_path)
     if job.bootstrap:
         env["NLRL_RUNTIME_BOOTSTRAP_INITIAL_SKILL"] = "1"
+    enforce_codex_actor_critic_if_required(env)
     return env
+
+
+def env_truthy(env: dict[str, str], key: str) -> bool:
+    return env.get(key, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def enforce_codex_actor_critic_if_required(env: dict[str, str]) -> None:
+    if not env_truthy(env, "GAIA_FRESH_REQUIRE_CODEX_ACTOR"):
+        return
+    defaults = {
+        "NLRL_ACTOR_MODEL": "gpt-5.4",
+        "NLRL_ACTOR_BASE_URL": "codex-cli",
+        "NLRL_ACTOR_API_KEY": "EMPTY",
+        "NLRL_ACTOR_API_MODE": "codex_cli",
+        "NLRL_ACTOR_TIMEOUT_SECONDS": "1800",
+        "NLRL_CRITIC_MODEL": "gpt-5.4",
+        "NLRL_CRITIC_BASE_URL": "codex-cli",
+        "NLRL_CRITIC_API_KEY": "EMPTY",
+        "NLRL_CRITIC_API_MODE": "codex_cli",
+        "NLRL_CRITIC_TIMEOUT_SECONDS": "1800",
+        "NLRL_CODEX_CLI_TIMEOUT_SECONDS": "1800",
+    }
+    for key, value in defaults.items():
+        env.setdefault(key, value)
+    for role in ("ACTOR", "CRITIC"):
+        mode = env.get(f"NLRL_{role}_API_MODE", "").strip().lower()
+        base_url = env.get(f"NLRL_{role}_BASE_URL", "").strip()
+        model = env.get(f"NLRL_{role}_MODEL", "").strip()
+        if mode != "codex_cli" or base_url != "codex-cli" or not model:
+            raise RuntimeError(
+                f"GAIA_FRESH_REQUIRE_CODEX_ACTOR=1 but {role.lower()} resolved to "
+                f"model={model!r}, base_url={base_url!r}, api_mode={mode!r}"
+            )
 
 
 def start_train(job: TrainJob, notes: str) -> TrainJob:
@@ -506,13 +593,22 @@ def check_job(job: TrainJob) -> int | None:
     code = job.process.poll()
     if code is None:
         return None
-    update_process_row(job.process.pid, "finished" if code == 0 else "dead")
+    if code == 0:
+        update_process_row(job.process.pid, "finished")
+    elif job.terminal_status and job.terminal_status.startswith("stopped_tail_partial") and run_has_required_states(job.run_name):
+        update_process_row(job.process.pid, "partial_tail_accepted")
+    else:
+        update_process_row(job.process.pid, "dead")
     return code
 
 
 def ensure_job_ok(job: TrainJob) -> None:
     code = check_job(job)
     if code is not None and code != 0:
+        if job.terminal_status and job.terminal_status.startswith("stopped_tail_partial") and run_has_required_states(job.run_name):
+            done, total = progress_for(job.run_name)
+            log(f"accepting partial {job.key} after {job.terminal_status}: returncode={code}, states={done}/{total}")
+            return
         raise RuntimeError(f"{job.key} failed with returncode={code}")
 
 
@@ -768,7 +864,8 @@ def main() -> int:
             "bootstrap prompt rolled back to 4/21 quick-CONCLUDE version; direct skipped; "
             f"{mode_note}; partial tail allowed={ALLOW_PARTIAL_TAIL}; "
             "generate A/B from dev states once tail threshold is reached; dependency-ready scheduling; "
-            f"run A_dev gpu0, A_test gpu1, B_dev gpu2, B_test gpu3; {CONCURRENCY_LABEL}."
+            f"run A_dev gpu0, A_test gpu1, B_dev gpu2, B_test gpu3; {CONCURRENCY_LABEL}; "
+            f"serialize_eval_waves={SERIALIZE_EVAL_WAVES}."
         ),
         kind="experiment_queue",
     )
@@ -842,6 +939,8 @@ def main() -> int:
         eval_jobs: list[TrainJob] = []
         b_skill: Path | None = None
         b_dev_started = False
+        b_test_started = False
+        a_eval_done = not SERIALIZE_EVAL_WAVES
         offline_workers = max(1, int(os.environ.get("GAIA_FRESH_OFFLINE_AB_WORKERS", "1")))
         with ThreadPoolExecutor(max_workers=offline_workers, thread_name_prefix="offline-ab") as pool:
             offline_futures = {
@@ -861,7 +960,9 @@ def main() -> int:
                 ): "b",
             }
             pending = set(offline_futures)
-            while pending or (b_skill is not None and not b_dev_started):
+            while pending or (
+                b_skill is not None and (not b_test_started or not b_dev_started)
+            ):
                 completed_now = [future for future in pending if future.done()]
                 for future in completed_now:
                     pending.remove(future)
@@ -872,14 +973,25 @@ def main() -> int:
                         new_jobs = start_a_eval_jobs(skill)
                         jobs.extend(new_jobs)
                         eval_jobs.extend(new_jobs)
+                        if SERIALIZE_EVAL_WAVES:
+                            log(
+                                "serialize eval waves enabled; waiting for A dev/test "
+                                "before starting B eval jobs"
+                            )
+                            wait_all(new_jobs)
+                            a_eval_done = True
                     else:
                         b_skill = skill
-                        log(f"B skill ready; starting B test immediately: {skill}")
-                        b_test = start_b_test_eval(skill)
-                        jobs.append(b_test)
-                        eval_jobs.append(b_test)
+                        log(f"B skill ready: {skill}")
 
-                if b_skill is not None and not b_dev_started:
+                if b_skill is not None and not b_test_started and a_eval_done:
+                    log(f"starting B test: {b_skill}")
+                    b_test = start_b_test_eval(b_skill)
+                    jobs.append(b_test)
+                    eval_jobs.append(b_test)
+                    b_test_started = True
+
+                if b_skill is not None and b_test_started and not b_dev_started and a_eval_done:
                     if boot_test_lane_ready(boot_test):
                         log(f"B dev lane ready; starting B dev: {b_skill}")
                         b_dev = start_b_dev_eval(b_skill)
@@ -893,7 +1005,9 @@ def main() -> int:
                             f"required={min_required_states(total) if total else 'unknown'}"
                         )
 
-                if pending or (b_skill is not None and not b_dev_started):
+                if pending or (
+                    b_skill is not None and (not b_test_started or not b_dev_started)
+                ):
                     for job in eval_jobs:
                         ensure_job_ok(job)
                     time.sleep(POLL_SECONDS)

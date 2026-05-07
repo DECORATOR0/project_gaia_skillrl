@@ -26,6 +26,7 @@ _SEMANTIC_FAILURE_MARKERS = (
 )
 
 _TAG_RE = re.compile(r"<(THOUGHT|CALL|ARGS|NEXT|ANSWER)>(.*?)</\1>", re.DOTALL | re.IGNORECASE)
+_PHASE_PROMPT_RE = re.compile(r"^=== Phase:\s*([A-Z][A-Z0-9_]*)\s*===", re.MULTILINE)
 
 
 @dataclass
@@ -186,6 +187,32 @@ def _prepare_messages_for_call(messages: list[LLMMessage], max_context_chars: in
     return _fit_messages_to_budget(messages, max_context_chars)
 
 
+def _hide_stale_phase_prompts(messages: list[LLMMessage], current_phase: str) -> list[LLMMessage]:
+    updated: list[LLMMessage] = []
+    for message in messages:
+        if message.role != "user":
+            updated.append(message)
+            continue
+        match = _PHASE_PROMPT_RE.search(message.content)
+        if not match:
+            updated.append(message)
+            continue
+        phase_name = match.group(1).upper()
+        if phase_name == current_phase.upper():
+            updated.append(message)
+            continue
+        updated.append(
+            LLMMessage(
+                role=message.role,
+                content=(
+                    f"[Previous phase instructions hidden: {phase_name}. "
+                    f"Current phase: {current_phase}. Only the current phase instructions are active.]"
+                ),
+            )
+        )
+    return updated
+
+
 def _format_allowed_next(allowed_next: list[str]) -> str:
     if not allowed_next:
         return "(none)"
@@ -323,6 +350,16 @@ def _direct_runtime_instruction(*, remaining_steps: int) -> str:
     )
 
 
+def _forced_answer_prompt() -> str:
+    return (
+        "The maximum tool/planning steps are exhausted. You must answer now using the evidence already visible in this conversation.\n"
+        "Do not call tools. Do not move to another phase. Do not continue analysis.\n"
+        "Output exactly one tag with the best final short answer:\n"
+        "<ANSWER>short final answer</ANSWER>\n"
+        "If uncertain, choose the most likely answer. Empty answers are invalid."
+    )
+
+
 class PhaseExecutorAgent:
     """ReAct executor that uses tag-based progressive disclosure with skill phases."""
 
@@ -333,11 +370,13 @@ class PhaseExecutorAgent:
         toolbox: Toolbox,
         *,
         max_context_chars: int = 0,
+        hide_stale_phase_prompts: bool = False,
     ):
         self.llm = OpenAICompatibleLLM(llm_config)
         self.prompt_root = prompt_root
         self.toolbox = toolbox
         self.max_context_chars = max_context_chars
+        self.hide_stale_phase_prompts = hide_stale_phase_prompts
 
     def run(
         self,
@@ -354,6 +393,7 @@ class PhaseExecutorAgent:
         fallback_conclude_prompt: str,
         phase_tool_allowlist: dict[str, list[str]] | None = None,
         answer_acceptance_policy: str = "conclude_only",
+        initial_phase_prompt: str = "",
     ) -> tuple[ParsedAction, str, list[ToolCallRecord], list[PhaseTransition], list[ExecutorStepRecord]]:
         tool_protocol = load_prompt(self.prompt_root / "tool_agent_protocol.md")
         full_system = (
@@ -366,6 +406,8 @@ class PhaseExecutorAgent:
             LLMMessage(role="system", content=full_system),
             LLMMessage(role="user", content=initial_user_prompt),
         ]
+        if initial_phase_prompt:
+            messages.append(LLMMessage(role="user", content=initial_phase_prompt))
         raw_outputs: list[str] = []
         records: list[ToolCallRecord] = []
         transitions: list[PhaseTransition] = []
@@ -397,6 +439,8 @@ class PhaseExecutorAgent:
                         content=fallback_conclude_prompt,
                     )
                 )
+                if self.hide_stale_phase_prompts:
+                    messages = _hide_stale_phase_prompts(messages, current_phase)
 
             result = self.llm.chat(
                 _prepare_messages_for_call(messages, self.max_context_chars)
@@ -633,6 +677,8 @@ class PhaseExecutorAgent:
                             content=phase_content,
                         )
                     )
+                    if self.hide_stale_phase_prompts:
+                        messages = _hide_stale_phase_prompts(messages, current_phase)
                 else:
                     feedback = _unknown_phase_feedback(
                         current_phase,
@@ -688,6 +734,47 @@ class PhaseExecutorAgent:
                         content=feedback,
                     )
                 )
+
+        if not final_action.answer.strip():
+            forced_step_idx = max_steps + 1
+            forced_prompt = _forced_answer_prompt()
+            raw_outputs.append("[runtime_feedback] [forced answer after max steps]")
+            messages.append(LLMMessage(role="user", content=forced_prompt))
+            result = self.llm.chat(
+                _prepare_messages_for_call(messages, self.max_context_chars)
+            )
+            log_llm_call(
+                log_dir / f"{role_name}_steps",
+                f"{role_name}_step_{forced_step_idx}_forced_answer",
+                result,
+            )
+            raw_outputs.append(result.text)
+            parsed = parse_executor_tags(result.text)
+            accepted = parsed.action_type == "answer" and bool(parsed.answer.strip())
+            step_trace.append(
+                ExecutorStepRecord(
+                    step_index=forced_step_idx,
+                    action_type=parsed.action_type,
+                    phase_before=current_phase,
+                    phase_after=current_phase,
+                    thought=parsed.thought,
+                    tool_name=parsed.tool_name,
+                    arguments=parsed.tool_args or {},
+                    next_phase=parsed.next_phase,
+                    answer=parsed.answer,
+                    accepted=accepted,
+                    success=accepted,
+                    outcome=(
+                        "forced_final_answer_after_max_steps"
+                        if accepted
+                        else "forced_answer_failed_after_max_steps"
+                    ),
+                    feedback="" if accepted else "Forced answer step did not produce a non-empty <ANSWER>.",
+                    raw_output=result.text,
+                )
+            )
+            if accepted:
+                final_action = parsed
 
         return final_action, "\n\n".join(raw_outputs), records, transitions, step_trace
 
@@ -898,5 +985,46 @@ class DirectExecutorAgent:
                     content=feedback,
                 )
             )
+
+        if not final_action.answer.strip():
+            forced_step_idx = max_steps + 1
+            forced_prompt = _forced_answer_prompt()
+            raw_outputs.append("[runtime_feedback] [forced answer after max steps]")
+            messages.append(LLMMessage(role="user", content=forced_prompt))
+            result = self.llm.chat(
+                _prepare_messages_for_call(messages, self.max_context_chars)
+            )
+            log_llm_call(
+                log_dir / f"{role_name}_steps",
+                f"{role_name}_step_{forced_step_idx}_forced_answer",
+                result,
+            )
+            raw_outputs.append(result.text)
+            parsed = parse_executor_tags(result.text)
+            accepted = parsed.action_type == "answer" and bool(parsed.answer.strip())
+            step_trace.append(
+                ExecutorStepRecord(
+                    step_index=forced_step_idx,
+                    action_type=parsed.action_type,
+                    phase_before="DIRECT",
+                    phase_after="DIRECT",
+                    thought=parsed.thought,
+                    tool_name=parsed.tool_name,
+                    arguments=parsed.tool_args or {},
+                    next_phase=parsed.next_phase,
+                    answer=parsed.answer,
+                    accepted=accepted,
+                    success=accepted,
+                    outcome=(
+                        "forced_final_answer_after_max_steps"
+                        if accepted
+                        else "forced_answer_failed_after_max_steps"
+                    ),
+                    feedback="" if accepted else "Forced answer step did not produce a non-empty <ANSWER>.",
+                    raw_output=result.text,
+                )
+            )
+            if accepted:
+                final_action = parsed
 
         return final_action, "\n\n".join(raw_outputs), records, step_trace
