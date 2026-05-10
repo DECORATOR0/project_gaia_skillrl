@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1840" viewBox="0 0 1200 1840">
+  <defs>
+    <style>
+      .bg { fill: #f7f8fb; }
+      .title { font: 800 42px "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif; fill: #111827; }
+      .sub { font: 24px "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif; fill: #4b5563; }
+      .card { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2.5; rx: 18; }
+      .head { font: 800 32px "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif; fill: #111827; }
+      .body { font: 24px "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif; fill: #243044; }
+      .small { font: 21px "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif; fill: #4b5563; }
+      .tag { fill: #eef2f7; stroke: #cbd5e1; stroke-width: 1.5; rx: 10; }
+      .tagText { font: 20px "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif; fill: #374151; }
+      .num { font: 800 22px Arial, sans-serif; fill: #ffffff; text-anchor: middle; }
+      .line { stroke: #94a3b8; stroke-width: 3; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="1840"/>
+  <text class="title" x="70" y="76">GAIA 系统问题地图</text>
+  <text class="sub" x="70" y="116">每轮实验先过五层检查，再判断 ARCH / prompt / skill 收益。</text>
+  <text class="sub" x="70" y="150">2026-05-03 Qwen3.5-9B 远端轮先按基础设施诊断样本处理。</text>
+
+  <line class="line" x1="600" y1="190" x2="600" y2="1720"/>
+
+  <g transform="translate(70 190)">
+    <rect class="card" x="0" y="0" width="1060" height="270"/>
+    <rect x="0" y="0" width="1060" height="72" rx="18" fill="#dbeafe"/>
+    <circle cx="46" cy="36" r="24" fill="#2563eb"/>
+    <text class="num" x="46" y="44">1</text>
+    <text class="head" x="88" y="47">模型与生成预算</text>
+    <text class="body" x="40" y="112">• executor：Qwen3-8B local / Qwen3.5-9B remote，单独看模型迁移稳定性</text>
+    <text class="body" x="40" y="150">• 输入：max_context_chars、prompt_tokens、task JSON、工具结果回灌</text>
+    <text class="body" x="40" y="188">• 输出：max_tokens、completion_tokens、finish_reason</text>
+    <text class="body" x="40" y="226">• thinking/stream：thinking_token_budget、reasoning chunks、0 text、wall timeout、断连</text>
+  </g>
+
+  <g transform="translate(70 500)">
+    <rect class="card" x="0" y="0" width="1060" height="270"/>
+    <rect x="0" y="0" width="1060" height="72" rx="18" fill="#dcfce7"/>
+    <circle cx="46" cy="36" r="24" fill="#16a34a"/>
+    <text class="num" x="46" y="44">2</text>
+    <text class="head" x="88" y="47">网络与搜索</text>
+    <text class="body" x="40" y="112">• 代理：23457 优先；17890 / 17891 / 43214 每次使用前复验</text>
+    <text class="body" x="40" y="150">• Search：DDG free control、Serper raw、Brave raw、Codex Search probe</text>
+    <text class="body" x="40" y="188">• Browse：fetch_url、html_extract、reader、browser extraction</text>
+    <text class="body" x="40" y="226">• 错误：read_timeout、403/404/429、Google sorry、botcheck、TLS</text>
+  </g>
+
+  <g transform="translate(70 810)">
+    <rect class="card" x="0" y="0" width="1060" height="270"/>
+    <rect x="0" y="0" width="1060" height="72" rx="18" fill="#fef3c7"/>
+    <circle cx="46" cy="36" r="24" fill="#d97706"/>
+    <text class="num" x="46" y="44">3</text>
+    <text class="head" x="88" y="47">工具协议与答案收口</text>
+    <text class="body" x="40" y="112">• TOOL：atomic_v2 主线；reagent_facade_v3 保留；atomic_v4 已废弃</text>
+    <text class="body" x="40" y="150">• Phase：allowed actions、invalid_answer_phase、invalid transition、rejected memory</text>
+    <text class="body" x="40" y="188">• Args：web_search.query、fetch_url.url、unexpected kwargs</text>
+    <text class="body" x="40" y="226">• Empty：24 步耗尽、last_phase、candidate seen not submitted、answer_now/fallback</text>
+  </g>
+
+  <g transform="translate(70 1120)">
+    <rect class="card" x="0" y="0" width="1060" height="270"/>
+    <rect x="0" y="0" width="1060" height="72" rx="18" fill="#ede9fe"/>
+    <circle cx="46" cy="36" r="24" fill="#7c3aed"/>
+    <text class="num" x="46" y="44">4</text>
+    <text class="head" x="88" y="47">队列与服务</text>
+    <text class="body" x="40" y="112">• 并发：child concurrency、version queues、remote lanes、endpoint sharing</text>
+    <text class="body" x="40" y="150">• Partial：tail threshold、required states、partial tail accepted</text>
+    <text class="body" x="40" y="188">• Missing：not_started、fatal_below_threshold、partial_tail</text>
+    <text class="body" x="40" y="226">• 资源：GPU utilization、端口、vLLM ready、owner process、run progress</text>
+  </g>
+
+  <g transform="translate(70 1430)">
+    <rect class="card" x="0" y="0" width="1060" height="270"/>
+    <rect x="0" y="0" width="1060" height="72" rx="18" fill="#fee2e2"/>
+    <circle cx="46" cy="36" r="24" fill="#dc2626"/>
+    <text class="num" x="46" y="44">5</text>
+    <text class="head" x="88" y="47">实验文档与指标</text>
+    <text class="body" x="40" y="112">• 六轴：BOOT / FLOW / ROLE / EXEC / TOOL / ARCH</text>
+    <text class="body" x="40" y="150">• RunCard：hypothesis、env、command、logs、run dirs、contamination</text>
+    <text class="body" x="40" y="188">• 指标：states、success、empty、invalid、web、exec fatal、answer rate</text>
+    <text class="body" x="40" y="226">• 结论：main_compare、diagnostic、discarded、pending</text>
+  </g>
+
+  <g transform="translate(70 1730)">
+    <rect class="tag" x="0" y="0" width="250" height="52"/>
+    <text class="tagText" x="24" y="34">clean_compare</text>
+    <rect class="tag" x="280" y="0" width="270" height="52"/>
+    <text class="tagText" x="304" y="34">infra_contaminated</text>
+    <rect class="tag" x="580" y="0" width="280" height="52"/>
+    <text class="tagText" x="604" y="34">search_contaminated</text>
+    <rect class="tag" x="890" y="0" width="170" height="52"/>
+    <text class="tagText" x="914" y="34">mixed</text>
+  </g>
+</svg>

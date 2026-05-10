@@ -2,17 +2,21 @@
   "provider": "serper",
   "fallback_provider": "ddg",
   "serper_api_keys": [
+    "08de037f94c9fa98063265172a969858af7770be",
+    "b1cdd501cb471ef3dda72000a3f8557c331a03fb",
+    "ede75540f491d40f5387d46b25d0033da531a51d",
+    "02ad45413e03b85c1611cb91c97a1dca3a9853ed",
+    "5c78eccb4c18e6ff59c7a91048606219de19269f",
+    "0a6e5b8acf8a08ffe813db80d9ce542ead1cebb9",
+    "b979b9a608abd82d97470cc0cbe984d1c3bea776"
+  ],
+  "serper_api_key": "08de037f94c9fa98063265172a969858af7770be",
+  "serper_backup_api_keys": [],
+  "serper_exhausted_api_keys": [
     "5f9bb989905278b270da9d6bdd4b31f47365af47",
     "675cce60e52c2d4a11b5e569f1192128fbc5a8da",
     "f252a3b47c3a84a7431add7f8ef6f1a2bcf00d77",
     "7c485a4b28576260810db97b81880e7f0807041b",
-    "0a6e5b8acf8a08ffe813db80d9ce542ead1cebb9",
-    "5c78eccb4c18e6ff59c7a91048606219de19269f",
-    "b979b9a608abd82d97470cc0cbe984d1c3bea776"
-  ],
-  "serper_api_key": "5f9bb989905278b270da9d6bdd4b31f47365af47",
-  "serper_backup_api_keys": [],
-  "serper_exhausted_api_keys": [
     "8ae649524e17b301f36bd245e4fc59de2848865c",
     "852da6a66719a4ad0a6c4ed28abbbc3b5a909ffc",
     "e25215f4c28a8efd2e14f1ee3e1313dde953d13d",
@@ -29,6 +33,8 @@
   "https_proxy": "http://127.0.0.1:17890",
   "no_proxy": "127.0.0.1,localhost",
   "clear_all_proxy": true,
-  "verified_at": "2026-05-07 00:55 +0800",
-  "notes": "Default GAIA search runtime. Change this file when Serper keys or proxy ports rotate. On 2026-05-04 18:30, GET https://google.serper.dev/account via http://127.0.0.1:17890 showed 8ae649524e17b301f36bd245e4fc59de2848865c balance=-24 and d5da266fb05de44aa4896bd337e3c08c92495621 balance=1016; moved 8ae649524e17b301f36bd245e4fc59de2848865c to exhausted and promoted d5da266fb05de44aa4896bd337e3c08c92495621 to primary. On 2026-05-04 20:13, GET https://google.serper.dev/account via http://127.0.0.1:17890 showed fbb44793b2f2ce3aa2e33d6b0134acbca4aec80f balance=2500 and rateLimit=5; added it as the next active rotation key after the current primary. On 2026-05-05 00:52, GET https://google.serper.dev/account via http://127.0.0.1:17890 showed b979b9a608abd82d97470cc0cbe984d1c3bea776 balance=2500, 5c78eccb4c18e6ff59c7a91048606219de19269f balance=2499, 7c485a4b28576260810db97b81880e7f0807041b balance=2500, and 0a6e5b8acf8a08ffe813db80d9ce542ead1cebb9 balance=2500; all rateLimit=5 and HTTP 200; added them as active rotation keys after the current two active keys. On 2026-05-05 19:13, account smoke via http://127.0.0.1:17890 showed d5da balance=-14, fbb balance=-17, b979 balance=1378, 5c78 balance=2499, 7c balance=2500, 0a balance=2500; promoted positive-balance keys before exhausted/negative keys. On 2026-05-06 23:49, account smoke via http://127.0.0.1:17890 showed b979 balance=118, 5c78 balance=2499, 7c balance=2500, 0a balance=2500, d5da balance=-14, and fbb balance=-17. On 2026-05-06 23:53, new key 5f9bb989905278b270da9d6bdd4b31f47365af47 returned HTTP 200 with balance=2500 and rateLimit=5; promoted it to primary and moved d5da/fbb to exhausted. On 2026-05-07 00:55, new keys 675cce60e52c2d4a11b5e569f1192128fbc5a8da and f252a3b47c3a84a7431add7f8ef6f1a2bcf00d77 both returned HTTP 200 with balance=2500 and rateLimit=5 via http://127.0.0.1:17890; added them after the current primary in the active rotation. Active positive balance is about 15117. Account checks are non-billable."
+  "serper_credit_policy": "Each Serper API key has a one-time total credit allocation of 2500, not a monthly reset. Keys are dedicated/exclusive.",
+  "latest_account_check": "2026-05-09 22:17 +0800 via http://127.0.0.1:17890: b1cdd501cb471ef3dda72000a3f8557c331a03fb HTTP 200 balance=2500 rateLimit=5; ede75540f491d40f5387d46b25d0033da531a51d HTTP 200 balance=2500 rateLimit=5; 02ad45413e03b85c1611cb91c97a1dca3a9853ed HTTP 200 balance=2500 rateLimit=5. Active positive balance after update is about 13020 using prior 2026-05-09 21:15 balances for existing active keys.",
+  "verified_at": "2026-05-09 22:17 +0800",
+  "notes": "Default GAIA search runtime. Change this file when Serper keys or proxy ports rotate. serper_api_keys are ordered by priority and build_search_runtime_env exports the first key as NLRL_SERPER_API_KEY. Current balance details live in latest_account_check; account checks are non-billable."
 }

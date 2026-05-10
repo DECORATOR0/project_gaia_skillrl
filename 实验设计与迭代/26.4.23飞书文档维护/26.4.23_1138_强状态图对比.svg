@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="360" viewBox="0 0 1400 360">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#333"/>
+    </marker>
+    <style>
+      .panel { fill: #fbfadf; stroke: #d6cf62; stroke-width: 2; }
+      .panel-small { fill: #fbfadf; stroke: #d6cf62; stroke-width: 2; }
+      .node { fill: #f1edff; stroke: #9b7cff; stroke-width: 2; rx: 3; }
+      .label { font: 15px sans-serif; fill: #222; }
+      .small { font: 13px sans-serif; fill: #333; }
+      .title { font: 22px sans-serif; font-weight: 700; fill: #333; }
+      .edge { fill: none; stroke: #333; stroke-width: 2.2; marker-end: url(#arrow); }
+      .edge-soft { fill: none; stroke: #555; stroke-width: 1.8; marker-end: url(#arrow); }
+      .tag { font: 14px sans-serif; fill: #6b5a00; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="360" fill="#f7f7f5"/>
+  <text x="40" y="36" class="title">从四阶段到强状态图</text>
+
+  <rect x="45" y="62" width="940" height="250" class="panel"/>
+  <text x="495" y="86" text-anchor="middle" class="tag">人工强状态图</text>
+
+  <rect x="68" y="178" width="48" height="28" class="node"/><text x="92" y="197" text-anchor="middle" class="small">INIT</text>
+  <rect x="148" y="178" width="104" height="28" class="node"/><text x="200" y="197" text-anchor="middle" class="small">TASK_PARSE</text>
+  <rect x="292" y="178" width="142" height="28" class="node"/><text x="363" y="197" text-anchor="middle" class="small">EVIDENCE_ROUTE</text>
+
+  <rect x="500" y="86" width="112" height="28" class="node"/><text x="556" y="105" text-anchor="middle" class="small">PROMPT_SOLVE</text>
+  <rect x="500" y="134" width="100" height="28" class="node"/><text x="550" y="153" text-anchor="middle" class="small">LOCAL_PARSE</text>
+  <rect x="500" y="182" width="104" height="28" class="node"/><text x="552" y="201" text-anchor="middle" class="small">MEDIA_PARSE</text>
+  <rect x="500" y="230" width="108" height="28" class="node"/><text x="554" y="249" text-anchor="middle" class="small">WEB_RETRIEVE</text>
+
+  <rect x="666" y="230" width="104" height="28" class="node"/><text x="718" y="249" text-anchor="middle" class="small">WEB_EXTRACT</text>
+  <rect x="680" y="158" width="150" height="28" class="node"/><text x="755" y="177" text-anchor="middle" class="small">COMPUTE_OR_COMPARE</text>
+  <rect x="866" y="158" width="104" height="28" class="node"/><text x="918" y="177" text-anchor="middle" class="small">CROSS_CHECK</text>
+  <rect x="1042" y="86" width="120" height="28" class="node"/><text x="1102" y="105" text-anchor="middle" class="small">FORMAT_VERIFY</text>
+  <rect x="1202" y="86" width="78" height="28" class="node"/><text x="1241" y="105" text-anchor="middle" class="small">ANSWER</text>
+  <rect x="1042" y="230" width="108" height="28" class="node"/><text x="1096" y="249" text-anchor="middle" class="small">BACKTRACK</text>
+
+  <path d="M116 192 H148" class="edge"/>
+  <path d="M252 192 H292" class="edge"/>
+  <path d="M434 192 C465 192,465 100,500 100" class="edge-soft"/>
+  <path d="M434 192 C468 192,466 148,500 148" class="edge-soft"/>
+  <path d="M434 192 H500" class="edge"/>
+  <path d="M434 192 C466 192,466 244,500 244" class="edge-soft"/>
+  <path d="M608 244 H666" class="edge"/>
+  <path d="M612 100 C650 100,650 172,680 172" class="edge-soft"/>
+  <path d="M600 148 C636 148,642 172,680 172" class="edge-soft"/>
+  <path d="M604 196 C640 196,642 172,680 172" class="edge-soft"/>
+  <path d="M770 244 C810 244,806 172,680 172" class="edge-soft"/>
+  <path d="M830 172 H866" class="edge"/>
+  <path d="M970 172 C1008 172,1008 100,1042 100" class="edge-soft"/>
+  <path d="M1162 100 H1202" class="edge"/>
+  <path d="M970 172 C1010 172,1010 244,1042 244" class="edge-soft"/>
+  <path d="M1042 244 C760 320,470 312,363 206" class="edge-soft"/>
+
+  <rect x="1028" y="122" width="350" height="104" class="panel-small"/>
+  <text x="1203" y="145" text-anchor="middle" class="tag">早期四阶段</text>
+  <rect x="1050" y="174" width="50" height="28" class="node"/><text x="1075" y="193" text-anchor="middle" class="small">INIT</text>
+  <rect x="1128" y="174" width="70" height="28" class="node"/><text x="1163" y="193" text-anchor="middle" class="small">GATHER</text>
+  <rect x="1226" y="174" width="78" height="28" class="node"/><text x="1265" y="193" text-anchor="middle" class="small">ANALYZE</text>
+  <rect x="1312" y="174" width="58" height="28" class="node"/><text x="1341" y="193" text-anchor="middle" class="small">CONCLUDE</text>
+  <path d="M1100 188 H1128" class="edge"/>
+  <path d="M1198 188 H1226" class="edge"/>
+  <path d="M1304 188 H1312" class="edge"/>
+</svg>

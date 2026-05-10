@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="820" viewBox="0 0 1180 820" role="img" aria-labelledby="title desc">
+  <title id="title">GAIA fresh 5.4 boot layered phase graph</title>
+  <desc id="desc">Layered phase graph with the normal solve path on the left and the repair loop plus blocked close-out exits on the right.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#24313f"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#ea580c"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#dc2626"/>
+    </marker>
+    <style>
+      .page { fill: #ffffff; }
+      .panel { fill: #f8fafc; stroke: #d5deea; stroke-width: 1.4; rx: 18; }
+      .risk-panel { fill: #fff7ed; stroke: #fed7aa; stroke-width: 1.4; rx: 18; }
+      .node { fill: #eef5ff; stroke: #2563eb; stroke-width: 2.1; rx: 12; }
+      .node2 { fill: #f5f7fb; stroke: #64748b; stroke-width: 1.8; rx: 12; }
+      .repair { fill: #ffedd5; stroke: #ea580c; stroke-width: 2.2; rx: 12; }
+      .end { fill: #ecfdf5; stroke: #16a34a; stroke-width: 2.2; rx: 14; }
+      .title { font: 700 26px Arial, sans-serif; fill: #111827; }
+      .subtitle { font: 400 15px Arial, sans-serif; fill: #475569; }
+      .lane { font: 700 15px Arial, sans-serif; fill: #334155; }
+      .node-text { font: 700 15px Arial, sans-serif; fill: #111827; text-anchor: middle; dominant-baseline: middle; }
+      .small { font: 400 13px Arial, sans-serif; fill: #475569; }
+      .note { font: 700 13px Arial, sans-serif; fill: #dc2626; }
+      .edge { fill: none; stroke: #24313f; stroke-width: 2.5; marker-end: url(#arrow); }
+      .edge-soft { fill: none; stroke: #64748b; stroke-width: 1.8; marker-end: url(#arrow); opacity: 0.75; }
+      .edge-blue { fill: none; stroke: #2563eb; stroke-width: 2.6; marker-end: url(#arrow-blue); }
+      .edge-orange { fill: none; stroke: #ea580c; stroke-width: 2.5; marker-end: url(#arrow-orange); }
+      .blocked { fill: none; stroke: #dc2626; stroke-width: 2.5; stroke-dasharray: 9 7; marker-end: url(#arrow-red); }
+      .muted { fill: #e2e8f0; stroke: #cbd5e1; stroke-width: 1.2; rx: 10; }
+      .muted-text { font: 700 13px Arial, sans-serif; fill: #64748b; text-anchor: middle; dominant-baseline: middle; }
+      .legend-text { font: 400 13px Arial, sans-serif; fill: #334155; dominant-baseline: middle; }
+    </style>
+  </defs>
+
+  <rect class="page" width="1180" height="820"/>
+
+  <text class="title" x="56" y="52">GAIA fresh 5.4 boot 状态图（分层版）</text>
+  <text class="subtitle" x="56" y="78">左侧是正常求解主路；右侧是空答高风险回路。完整 Next target set 见文档表格。</text>
+
+  <rect class="panel" x="54" y="106" width="736" height="650"/>
+  <rect class="risk-panel" x="824" y="106" width="302" height="650"/>
+
+  <text class="lane" x="84" y="138">正常求解主路</text>
+  <text class="lane" x="854" y="138">高风险修复回路</text>
+
+  <!-- Left layered nodes -->
+  <rect class="node" x="348" y="158" width="148" height="54"/>
+  <text class="node-text" x="422" y="186">INIT</text>
+
+  <rect class="node" x="94" y="286" width="180" height="58"/>
+  <text class="node-text" x="184" y="316">DIRECT_SOLVE</text>
+
+  <rect class="node" x="332" y="286" width="180" height="58"/>
+  <text class="node-text" x="422" y="316">LOCAL_EVIDENCE</text>
+
+  <rect class="node" x="570" y="286" width="180" height="58"/>
+  <text class="node-text" x="660" y="316">WEB_EVIDENCE</text>
+
+  <rect class="node" x="230" y="440" width="180" height="58"/>
+  <text class="node-text" x="320" y="470">COMPUTE</text>
+
+  <rect class="node" x="472" y="440" width="180" height="58"/>
+  <text class="node-text" x="562" y="470">VERIFY</text>
+
+  <rect class="end" x="332" y="608" width="180" height="58"/>
+  <text class="node-text" x="422" y="638">CONCLUDE</text>
+
+  <!-- main left edges -->
+  <path class="edge" d="M394 212 L235 286"/>
+  <path class="edge" d="M422 212 L422 286"/>
+  <path class="edge" d="M450 212 L610 286"/>
+
+  <path class="edge-soft" d="M184 344 C184 398, 252 424, 294 440"/>
+  <path class="edge-soft" d="M220 344 C292 394, 430 426, 520 440"/>
+
+  <path class="edge" d="M408 344 C380 384, 350 418, 330 440"/>
+  <path class="edge" d="M448 344 C486 386, 526 420, 552 440"/>
+  <path class="edge" d="M620 344 C580 386, 530 420, 352 440"/>
+  <path class="edge" d="M660 344 C632 388, 596 422, 574 440"/>
+
+  <path class="edge-blue" d="M512 316 L570 316"/>
+  <path class="edge-blue" d="M570 333 C524 370, 468 370, 512 333"/>
+
+  <path class="edge" d="M320 498 C336 548, 374 582, 405 608"/>
+  <path class="edge" d="M562 498 C546 548, 502 582, 440 608"/>
+  <path class="edge-soft" d="M392 212 C310 348, 302 500, 332 608"/>
+
+  <!-- muted direct conclude note -->
+  <rect class="muted" x="94" y="608" width="170" height="58"/>
+  <text class="muted-text" x="179" y="629">INIT / DIRECT</text>
+  <text class="muted-text" x="179" y="648">可少量直达收口</text>
+  <path class="edge-soft" d="M274 636 L332 636"/>
+
+  <!-- Right risk nodes -->
+  <rect class="repair" x="884" y="182" width="180" height="58"/>
+  <text class="node-text" x="974" y="212">REPAIR</text>
+
+  <rect class="node2" x="884" y="328" width="180" height="58"/>
+  <text class="node-text" x="974" y="358">回到证据/计算</text>
+
+  <rect class="node2" x="884" y="474" width="180" height="58"/>
+  <text class="node-text" x="974" y="504">VERIFY</text>
+
+  <rect class="end" x="884" y="640" width="180" height="58"/>
+  <text class="node-text" x="974" y="670">CONCLUDE</text>
+
+  <!-- cross into repair from left -->
+  <path class="edge-orange" d="M750 316 C808 298, 848 250, 884 222"/>
+  <text class="small" x="795" y="282">web/local/tool 失败</text>
+  <path class="edge-orange" d="M410 470 C620 490, 780 314, 884 224"/>
+  <text class="small" x="623" y="465">compute 失败</text>
+
+  <!-- repair loop -->
+  <path class="edge-orange" d="M974 240 L974 328"/>
+  <path class="edge-orange" d="M974 386 L974 474"/>
+  <path class="edge" d="M974 532 L974 640"/>
+  <path class="edge-orange" d="M884 358 C802 358, 802 210, 884 210"/>
+  <text class="small" x="834" y="307">继续补证据</text>
+  <path class="edge-orange" d="M884 504 C810 468, 810 246, 884 220"/>
+  <text class="small" x="836" y="438">验证失败再修复</text>
+
+  <!-- blocked shortcuts -->
+  <path class="blocked" d="M974 240 C1038 350, 1038 540, 1008 640"/>
+  <text class="note" x="1018" y="416">当前缺口</text>
+  <text class="small" x="1018" y="438">REPAIR 不能直达收口</text>
+
+  <path class="blocked" d="M750 344 C844 470, 844 602, 884 662"/>
+  <text class="note" x="808" y="550">WEB/LOCAL</text>
+  <text class="small" x="808" y="572">有候选也要绕路</text>
+
+  <!-- summary boxes -->
+  <rect class="panel" x="94" y="704" width="620" height="42"/>
+  <text class="small" x="114" y="724">读图方式：正常路径按层向下走。</text>
+  <text class="small" x="114" y="740">一旦进入右侧 REPAIR，缺少直接提交答案的出口，容易在 24 步内耗尽。</text>
+
+  <rect class="risk-panel" x="854" y="704" width="242" height="42"/>
+  <text class="small" x="874" y="724">建议补边：</text>
+  <text class="small" x="874" y="740">REPAIR / WEB / LOCAL → CONCLUDE</text>
+
+  <!-- Legend -->
+  <path class="edge" d="M76 784 L120 784"/>
+  <text class="legend-text" x="132" y="784">黑线：主路径合法转移</text>
+
+  <path class="edge-soft" d="M286 784 L330 784"/>
+  <text class="legend-text" x="342" y="784">灰线：低频合法旁路</text>
+
+  <path class="edge-blue" d="M484 784 L528 784"/>
+  <text class="legend-text" x="540" y="784">蓝线：本地/网页证据互跳</text>
+
+  <path class="edge-orange" d="M722 784 L766 784"/>
+  <text class="legend-text" x="778" y="784">橙线：进入或停留在 REPAIR</text>
+
+  <path class="blocked" d="M960 784 L1004 784"/>
+  <text class="legend-text" x="1016" y="784">红虚线：当前缺失收口边</text>
+</svg>

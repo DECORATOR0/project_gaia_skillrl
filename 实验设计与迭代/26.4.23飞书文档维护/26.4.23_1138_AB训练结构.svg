@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="380" viewBox="0 0 1400 380">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#333"/>
+    </marker>
+    <style>
+      .bg { fill: #f7f7f5; }
+      .box { fill: #f7f4ff; stroke: #9b7cff; stroke-width: 2.2; rx: 5; }
+      .box2 { fill: #eef8ff; stroke: #62a8d7; stroke-width: 2.2; rx: 5; }
+      .box3 { fill: #fff5e8; stroke: #e0a14a; stroke-width: 2.2; rx: 5; }
+      .title { font: 26px sans-serif; font-weight: 700; fill: #333; }
+      .label { font: 20px sans-serif; fill: #222; }
+      .small { font: 16px sans-serif; fill: #555; }
+      .edge { fill: none; stroke: #333; stroke-width: 2.8; marker-end: url(#arrow); }
+      .dash { fill: none; stroke: #777; stroke-width: 2.2; stroke-dasharray: 7 5; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect class="bg" width="1400" height="380"/>
+  <text x="48" y="42" class="title">boot-v3 A/B 训练结构</text>
+
+  <rect x="60" y="130" width="170" height="72" class="box"/>
+  <text x="145" y="160" text-anchor="middle" class="label">bootstrap</text>
+  <text x="145" y="184" text-anchor="middle" class="small">定图 + 初始节点</text>
+
+  <rect x="300" y="130" width="190" height="72" class="box2"/>
+  <text x="395" y="160" text-anchor="middle" class="label">dev rollout</text>
+  <text x="395" y="184" text-anchor="middle" class="small">同一批 states</text>
+
+  <rect x="570" y="72" width="190" height="72" class="box3"/>
+  <text x="665" y="102" text-anchor="middle" class="label">A full critic</text>
+  <text x="665" y="126" text-anchor="middle" class="small">全量 batch</text>
+
+  <rect x="570" y="205" width="190" height="72" class="box3"/>
+  <text x="665" y="235" text-anchor="middle" class="label">B sharded critic</text>
+  <text x="665" y="259" text-anchor="middle" class="small">分族 shard</text>
+
+  <rect x="835" y="72" width="170" height="72" class="box"/>
+  <text x="920" y="102" text-anchor="middle" class="label">actor A</text>
+  <text x="920" y="126" text-anchor="middle" class="small">只改节点细节</text>
+
+  <rect x="835" y="205" width="170" height="72" class="box"/>
+  <text x="920" y="235" text-anchor="middle" class="label">actor B</text>
+  <text x="920" y="259" text-anchor="middle" class="small">只改节点细节</text>
+
+  <rect x="1080" y="72" width="240" height="72" class="box2"/>
+  <text x="1200" y="102" text-anchor="middle" class="label">A dev/test eval</text>
+  <text x="1200" y="126" text-anchor="middle" class="small">评估 A skill</text>
+
+  <rect x="1080" y="205" width="240" height="72" class="box2"/>
+  <text x="1200" y="235" text-anchor="middle" class="label">B dev/test eval</text>
+  <text x="1200" y="259" text-anchor="middle" class="small">评估 B skill</text>
+
+  <path d="M230 166 H300" class="edge"/>
+  <path d="M490 166 C530 166,530 108,570 108" class="edge"/>
+  <path d="M490 166 C530 166,530 241,570 241" class="edge"/>
+  <path d="M760 108 H835" class="edge"/>
+  <path d="M760 241 H835" class="edge"/>
+  <path d="M1005 108 H1080" class="edge"/>
+  <path d="M1005 241 H1080" class="edge"/>
+  <path d="M395 202 C395 320,920 330,1200 277" class="dash"/>
+  <text x="704" y="346" text-anchor="middle" class="small">A/B 共享同一份 dev rollout，变量只保留 critic 接入方式</text>
+</svg>

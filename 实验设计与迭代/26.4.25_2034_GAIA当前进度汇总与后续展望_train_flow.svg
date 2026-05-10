@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#344054"/>
+    </marker>
+    <style>
+      text { font-family: Arial, "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #101828; }
+      .title { font-size: 26px; font-weight: 700; }
+      .subtitle { font-size: 15px; fill: #475467; }
+      .box { fill: #ffffff; stroke: #98a2b3; stroke-width: 1.6; rx: 10; }
+      .stage { fill: #eef4ff; stroke: #6172f3; }
+      .data { fill: #ecfdf3; stroke: #17b26a; }
+      .model { fill: #fff6ed; stroke: #f79009; }
+      .eval { fill: #fdf2fa; stroke: #c11574; }
+      .note { fill: #f8fafc; stroke: #cbd5e1; stroke-dasharray: 5 4; }
+      .small { font-size: 13px; fill: #475467; }
+      .label { font-size: 16px; font-weight: 700; }
+      .arrow { stroke: #344054; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+      .arrow2 { stroke: #6172f3; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="760" fill="#f8fafc"/>
+  <text class="title" x="54" y="54">GAIA SkillRL 当前训练闭环</text>
+  <text class="subtitle" x="54" y="82">bootstrap 定图；executor 逐 phase 执行；critic / actor 在锁图边界内增强 skill。</text>
+
+  <rect class="box data" x="54" y="126" width="210" height="88"/>
+  <text class="label" x="82" y="158">GAIA validation</text>
+  <text class="small" x="82" y="182">dev 83 / test 82</text>
+  <text class="small" x="82" y="202">分层保序切分</text>
+
+  <rect class="box stage" x="330" y="126" width="220" height="88"/>
+  <text class="label" x="358" y="158">Bootstrap</text>
+  <text class="small" x="358" y="182">runtime contract</text>
+  <text class="small" x="358" y="202">batch snapshot + gold shape</text>
+
+  <rect class="box data" x="616" y="126" width="234" height="88"/>
+  <text class="label" x="644" y="158">Seed SKILL.md</text>
+  <text class="small" x="644" y="182">phase graph + tool allowlist</text>
+  <text class="small" x="644" y="202">common base + node-local info</text>
+
+  <rect class="box model" x="916" y="126" width="232" height="88"/>
+  <text class="label" x="944" y="158">Executor run</text>
+  <text class="small" x="944" y="182">qwen3-8b, max 24 steps</text>
+  <text class="small" x="944" y="202">tool calls + phase transitions</text>
+
+  <path class="arrow" d="M264 170 H330"/>
+  <path class="arrow" d="M550 170 H616"/>
+  <path class="arrow" d="M850 170 H916"/>
+
+  <rect class="box data" x="916" y="280" width="232" height="92"/>
+  <text class="label" x="944" y="312">Execution artifacts</text>
+  <text class="small" x="944" y="336">state.json / run_summary</text>
+  <text class="small" x="944" y="356">compact rows / outcome counts</text>
+
+  <path class="arrow" d="M1032 214 V280"/>
+
+  <rect class="box model" x="608" y="280" width="250" height="126"/>
+  <text class="label" x="636" y="312">Critic</text>
+  <text class="small" x="636" y="336">A: full batch</text>
+  <text class="small" x="636" y="356">B: family-sharded</text>
+  <text class="small" x="636" y="376">success / protocol / web / local</text>
+  <text class="small" x="636" y="396">outputs node edit reward</text>
+
+  <path class="arrow" d="M916 326 H858"/>
+
+  <rect class="box model" x="330" y="280" width="220" height="126"/>
+  <text class="label" x="358" y="312">Actor</text>
+  <text class="small" x="358" y="336">改 common preface</text>
+  <text class="small" x="358" y="356">改 phase rules / tools</text>
+  <text class="small" x="358" y="376">保持 phase order</text>
+  <text class="small" x="358" y="396">保持 Next target set</text>
+
+  <path class="arrow" d="M608 344 H550"/>
+
+  <rect class="box data" x="54" y="294" width="210" height="98"/>
+  <text class="label" x="82" y="326">Updated skill</text>
+  <text class="small" x="82" y="350">A_full skill</text>
+  <text class="small" x="82" y="370">B_sharded skill</text>
+  <text class="small" x="82" y="390">graph lock check</text>
+
+  <path class="arrow" d="M330 344 H264"/>
+
+  <rect class="box eval" x="54" y="484" width="236" height="104"/>
+  <text class="label" x="82" y="516">Dev / Test eval</text>
+  <text class="small" x="82" y="540">same executor + new skill</text>
+  <text class="small" x="82" y="560">score, traces, case families</text>
+  <text class="small" x="82" y="580">select next rerun target</text>
+
+  <path class="arrow2" d="M159 392 V484"/>
+  <path class="arrow2" d="M290 536 C470 536 520 536 660 536 C760 536 822 474 916 372"/>
+
+  <rect class="box note" x="386" y="488" width="336" height="124"/>
+  <text class="label" x="414" y="520">当前关键约束</text>
+  <text class="small" x="414" y="544">常规 actor 不修图</text>
+  <text class="small" x="414" y="564">critic 输入偏 compact，需加证据 exemplar</text>
+  <text class="small" x="414" y="584">test 分数优先于中间格式指标</text>
+
+  <rect class="box note" x="790" y="488" width="358" height="124"/>
+  <text class="label" x="818" y="520">下一轮主要实验变量</text>
+  <text class="small" x="818" y="544">API 到位后统一重跑 boot-v3 / fixedprompt</text>
+  <text class="small" x="818" y="564">evidence-rich critic row</text>
+  <text class="small" x="818" y="584">tool contract / web helper / verify gate</text>
+</svg>

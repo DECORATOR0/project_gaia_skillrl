@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1180" viewBox="0 0 1280 1180">
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .title { font: 800 42px "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif; fill: #111827; }
+      .sub { font: 24px "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif; fill: #4b5563; }
+      .section { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2.5; rx: 20; }
+      .pre { fill: #ecfeff; stroke: #06b6d4; stroke-width: 2.5; rx: 18; }
+      .soft { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 2; rx: 16; }
+      .run { fill: #f0fdf4; stroke: #22c55e; stroke-width: 2.5; rx: 18; }
+      .post { fill: #fff7ed; stroke: #fb923c; stroke-width: 2.5; rx: 18; }
+      .doc { fill: #f5f3ff; stroke: #8b5cf6; stroke-width: 2.5; rx: 18; }
+      .head { font: 800 30px "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif; fill: #111827; }
+      .body { font: 24px "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif; fill: #263241; }
+      .small { font: 21px "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif; fill: #64748b; }
+      .num { font: 800 22px Arial, sans-serif; fill: #ffffff; text-anchor: middle; }
+      .line { stroke: #64748b; stroke-width: 3; fill: none; }
+      .pill { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; rx: 12; }
+      .pillText { font: 20px "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif; fill: #334155; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1280" height="1180"/>
+  <text class="title" x="70" y="72">GAIA 实验发起前后最小闭环 v2</text>
+  <text class="sub" x="70" y="110">发起前只查能立刻减少低级失误的项；运行后的 timeout、fatal、empty final 交给代码分析。</text>
+
+  <g transform="translate(70 150)">
+    <rect class="pre" x="0" y="0" width="1140" height="330"/>
+    <circle cx="48" cy="48" r="26" fill="#0891b2"/>
+    <text class="num" x="48" y="56">1</text>
+    <text class="head" x="92" y="52">发起前最小必做</text>
+    <text class="body" x="46" y="105">• RunCard：六轴、数据切片、预算、并发、run prefix、日志路径、输出目录</text>
+    <text class="body" x="46" y="147">• Endpoint：远端服务、新模型、新 base_url 或刚重启服务时做 /v1/models 或 tiny chat</text>
+    <text class="body" x="46" y="189">• Web 实验：用本轮同一 proxy/env 跑 Search API 样例 query，记录 status、latency、result_count</text>
+    <text class="body" x="46" y="231">• 启动信息：nohup 命令、PID、cwd、run_dir、log file，登记 /data/xsy/活的进程.csv</text>
+    <text class="small" x="46" y="276">暂停红线：endpoint 完全不可达、Search API 不可用、输出目录冲突、命令或日志路径缺失。</text>
+  </g>
+
+  <g transform="translate(70 515)">
+    <rect class="soft" x="0" y="0" width="1140" height="170"/>
+    <text class="head" x="46" y="48">发起前不硬扛</text>
+    <text class="body" x="46" y="92">• 历史少量 stream retry / web timeout：写入风险备注，后续由 postrun analyzer 量化。</text>
+    <text class="body" x="46" y="132">• early fatal、empty final、24 步耗尽：这是运行后现象，结束后归因。</text>
+  </g>
+
+  <path class="line" marker-end="url(#arrow)" d="M 640 685 L 640 735"/>
+
+  <g transform="translate(70 735)">
+    <rect class="run" x="0" y="0" width="1140" height="130"/>
+    <circle cx="48" cy="48" r="26" fill="#16a34a"/>
+    <text class="num" x="48" y="56">2</text>
+    <text class="head" x="92" y="52">后台启动</text>
+    <text class="body" x="46" y="100">统一 nohup + 重定向日志；后续状态检查刷新进程登记表。</text>
+  </g>
+
+  <path class="line" marker-end="url(#arrow)" d="M 640 865 L 640 915"/>
+
+  <g transform="translate(70 915)">
+    <rect class="post" x="0" y="0" width="1140" height="190"/>
+    <circle cx="48" cy="48" r="26" fill="#ea580c"/>
+    <text class="num" x="48" y="56">3</text>
+    <text class="head" x="92" y="52">结束后代码分析</text>
+    <text class="body" x="46" y="100">• 完成度：states、success、missing_not_started / fatal_below_threshold / partial_tail</text>
+    <text class="body" x="46" y="140">• 健康：Search/fetch 错误、stream retry、reasoning/content 预算、exec fatal</text>
+    <text class="body" x="46" y="180">• Empty final：步数耗尽、最后 phase、失败工具、候选答案未提交</text>
+  </g>
+
+  <path class="line" marker-end="url(#arrow)" d="M 640 1105 L 640 1132"/>
+
+  <g transform="translate(70 1132)">
+    <rect class="doc" x="0" y="0" width="1140" height="38"/>
+    <text class="pillText" x="34" y="26">输出：run_card.yaml / preflight_report.json / postrun_analysis.json / contamination suggestion</text>
+  </g>
+</svg>

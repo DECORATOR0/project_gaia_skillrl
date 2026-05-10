@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#344054"/>
+    </marker>
+    <style>
+      text { font-family: Arial, "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #101828; }
+      .title { font-size: 26px; font-weight: 700; }
+      .subtitle { font-size: 15px; fill: #475467; }
+      .box { fill: #ffffff; stroke: #98a2b3; stroke-width: 1.6; rx: 10; }
+      .phase { fill: #eef4ff; stroke: #6172f3; }
+      .tool { fill: #ecfdf3; stroke: #17b26a; }
+      .score { fill: #fdf2fa; stroke: #c11574; }
+      .warn { fill: #fff6ed; stroke: #f79009; }
+      .small { font-size: 13px; fill: #475467; }
+      .label { font-size: 16px; font-weight: 700; }
+      .arrow { stroke: #344054; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+      .thin { stroke: #667085; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="#f8fafc"/>
+  <text class="title" x="54" y="54">GAIA 单题测试执行流</text>
+  <text class="subtitle" x="54" y="82">runtime 每次只注入当前 phase；executor 每步只能 CALL / NEXT / ANSWER 之一。</text>
+
+  <rect class="box tool" x="60" y="126" width="210" height="92"/>
+  <text class="label" x="88" y="158">Task workspace</text>
+  <text class="small" x="88" y="182">task.json</text>
+  <text class="small" x="88" y="202">attachments if any</text>
+
+  <rect class="box phase" x="330" y="126" width="220" height="92"/>
+  <text class="label" x="358" y="158">INIT</text>
+  <text class="small" x="358" y="182">read task / route</text>
+  <text class="small" x="358" y="202">capture answer contract</text>
+
+  <rect class="box phase" x="610" y="96" width="216" height="82"/>
+  <text class="label" x="638" y="128">ATTACHMENT_PARSE</text>
+  <text class="small" x="638" y="152">files, tables, images, audio</text>
+
+  <rect class="box phase" x="610" y="206" width="216" height="82"/>
+  <text class="label" x="638" y="238">WEB_RESEARCH</text>
+  <text class="small" x="638" y="262">search, fetch, extract</text>
+
+  <rect class="box phase" x="610" y="316" width="216" height="82"/>
+  <text class="label" x="638" y="348">DIRECT_REASON</text>
+  <text class="small" x="638" y="372">self-contained logic</text>
+
+  <rect class="box phase" x="610" y="426" width="216" height="82"/>
+  <text class="label" x="638" y="458">COMPUTE</text>
+  <text class="small" x="638" y="482">python, count, filter, join</text>
+
+  <rect class="box phase" x="900" y="206" width="216" height="82"/>
+  <text class="label" x="928" y="238">VERIFY</text>
+  <text class="small" x="928" y="262">support, completeness, format</text>
+
+  <rect class="box warn" x="900" y="330" width="216" height="82"/>
+  <text class="label" x="928" y="362">REPAIR</text>
+  <text class="small" x="928" y="386">one blocker, one new fix</text>
+
+  <rect class="box score" x="900" y="486" width="216" height="82"/>
+  <text class="label" x="928" y="518">CONCLUDE</text>
+  <text class="small" x="928" y="542">final short answer only</text>
+
+  <path class="arrow" d="M270 172 H330"/>
+  <path class="arrow" d="M550 172 C580 172 580 137 610 137"/>
+  <path class="arrow" d="M550 172 C580 172 580 247 610 247"/>
+  <path class="arrow" d="M550 172 C580 172 580 357 610 357"/>
+  <path class="arrow" d="M550 172 C580 172 580 467 610 467"/>
+
+  <path class="thin" d="M826 137 C870 137 870 247 900 247"/>
+  <path class="thin" d="M826 247 H900"/>
+  <path class="thin" d="M826 357 C870 357 870 247 900 247"/>
+  <path class="thin" d="M826 467 C870 467 870 247 900 247"/>
+  <path class="thin" d="M1008 288 V330"/>
+  <path class="thin" d="M1008 412 V486"/>
+  <path class="thin" d="M1008 288 V486"/>
+  <path class="thin" d="M900 371 C850 371 850 137 826 137"/>
+  <path class="thin" d="M900 371 C850 371 850 247 826 247"/>
+  <path class="thin" d="M900 371 C850 371 850 467 826 467"/>
+
+  <rect class="box tool" x="60" y="496" width="418" height="112"/>
+  <text class="label" x="88" y="528">工具层</text>
+  <text class="small" x="88" y="552">local: list/read/table/pdf/docx/pptx/archive</text>
+  <text class="small" x="88" y="572">media: OCR, image QA, audio transcribe</text>
+  <text class="small" x="88" y="592">web: search, fetch_url, html_extract; compute: run_python</text>
+
+  <rect class="box score" x="530" y="588" width="586" height="70"/>
+  <text class="label" x="558" y="620">Scoring</text>
+  <text class="small" x="558" y="644">final_answer 与 gold_answer 走官方 GAIA scorer 归一化匹配；同时保留完整 trace 做 case 分析。</text>
+</svg>

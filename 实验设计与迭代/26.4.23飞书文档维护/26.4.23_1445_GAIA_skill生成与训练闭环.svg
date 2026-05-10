@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1840" height="540" viewBox="0 0 1840 540">
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,8 L10,4 z" fill="#2f2f2f"/>
+    </marker>
+    <style>
+      .title { font: 26px "Noto Serif CJK SC", serif; font-weight: 700; fill: #333; }
+      .group { font: 20px "Noto Sans CJK SC", sans-serif; font-weight: 600; fill: #444; }
+      .label { font: 20px "Noto Sans CJK SC", sans-serif; fill: #222; }
+      .small { font: 14px "Noto Sans CJK SC", sans-serif; fill: #555; }
+      .note { font: 15px "Noto Sans CJK SC", sans-serif; fill: #666; }
+      .edge { fill: none; stroke: #2f2f2f; stroke-width: 3.2; marker-end: url(#arrow); stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+  <rect width="1840" height="540" fill="#f5f5f2"/>
+  <path d="M0 125 C240 35 390 230 560 145 S880 15 1085 160 S1365 350 1840 225" fill="none" stroke="#deded8" stroke-width="38" opacity="0.45"/>
+  <path d="M0 420 C210 305 395 485 590 360 S915 220 1135 372 S1470 520 1840 398" fill="none" stroke="#deded8" stroke-width="44" opacity="0.38"/>
+  <rect x="40" y="75" width="1760" height="430" rx="6" fill="rgba(255,255,255,0.74)"/>
+  <text x="48" y="45" class="title">GAIA：接入 -&gt; bootstrap 生成 skill -&gt; 训练闭环</text>
+  <text x="80" y="122" class="group">前置接入与 skill 生成</text>
+  <text x="975" y="122" class="group">训练闭环</text>
+  <rect x="80" y="170" width="170" height="74" rx="6" fill="#eef8ff" stroke="#62a8d7" stroke-width="2.4"/>
+  <text x="165.0" y="201" text-anchor="middle" class="label">GAIA slices</text>
+  <text x="165.0" y="224" text-anchor="middle" class="small">dev / test</text>
+  <rect x="310" y="170" width="240" height="74" rx="6" fill="#eef8ff" stroke="#62a8d7" stroke-width="2.4"/>
+  <text x="430.0" y="201" text-anchor="middle" class="label">materialize</text>
+  <text x="430.0" y="224" text-anchor="middle" class="small">task.json + files</text>
+  <rect x="150" y="325" width="250" height="74" rx="6" fill="#fff5e8" stroke="#e0a14a" stroke-width="2.4"/>
+  <text x="275.0" y="356" text-anchor="middle" class="label">runtime contract</text>
+  <text x="275.0" y="379" text-anchor="middle" class="small">tools / phase / answer</text>
+  <rect x="430" y="325" width="260" height="74" rx="6" fill="#eef8ff" stroke="#62a8d7" stroke-width="2.4"/>
+  <text x="560.0" y="356" text-anchor="middle" class="label">dev batch snapshot</text>
+  <text x="560.0" y="379" text-anchor="middle" class="small">task mix / answer shape</text>
+  <rect x="720" y="325" width="180" height="74" rx="6" fill="#fff5e8" stroke="#e0a14a" stroke-width="2.4"/>
+  <text x="810.0" y="356" text-anchor="middle" class="label">bootstrap LLM</text>
+  <text x="810.0" y="379" text-anchor="middle" class="small">generate first skill</text>
+  <rect x="960" y="325" width="210" height="74" rx="6" fill="#f7f4ff" stroke="#9b7cff" stroke-width="2.4"/>
+  <text x="1065.0" y="356" text-anchor="middle" class="label">SKILL.md</text>
+  <text x="1065.0" y="379" text-anchor="middle" class="small">initial, then updated</text>
+  <rect x="830" y="170" width="180" height="74" rx="6" fill="#f7f4ff" stroke="#9b7cff" stroke-width="2.4"/>
+  <text x="920.0" y="201" text-anchor="middle" class="label">SkillEnvironment</text>
+  <text x="920.0" y="224" text-anchor="middle" class="small">task + current skill</text>
+  <rect x="1070" y="170" width="180" height="74" rx="6" fill="#f7f4ff" stroke="#9b7cff" stroke-width="2.4"/>
+  <text x="1160.0" y="201" text-anchor="middle" class="label">executor qwen3-8b</text>
+  <text x="1160.0" y="224" text-anchor="middle" class="small">rollout</text>
+  <rect x="1310" y="170" width="195" height="74" rx="6" fill="#fff5e8" stroke="#e0a14a" stroke-width="2.4"/>
+  <text x="1407.5" y="201" text-anchor="middle" class="label">official scorer</text>
+  <text x="1407.5" y="224" text-anchor="middle" class="small">reward / eval</text>
+  <rect x="1545" y="170" width="110" height="74" rx="6" fill="#fff5e8" stroke="#e0a14a" stroke-width="2.4"/>
+  <text x="1600.0" y="201" text-anchor="middle" class="label">critic</text>
+  <text x="1600.0" y="224" text-anchor="middle" class="small">error family</text>
+  <rect x="1685" y="170" width="95" height="74" rx="6" fill="#fff5e8" stroke="#e0a14a" stroke-width="2.4"/>
+  <text x="1732.5" y="201" text-anchor="middle" class="label">actor</text>
+  <text x="1732.5" y="224" text-anchor="middle" class="small">edit plan</text>
+  <rect x="1520" y="325" width="190" height="74" rx="6" fill="#f7f4ff" stroke="#9b7cff" stroke-width="2.4"/>
+  <text x="1615.0" y="356" text-anchor="middle" class="label">skill writeback</text>
+  <text x="1615.0" y="379" text-anchor="middle" class="small">apply skill diff</text>
+  <path d="M 250.0 207.0 L 310.0 207.0" class="edge"/>
+  <path d="M 185.4 244.0 L 500.0 325.0" class="edge"/>
+  <path d="M 550.0 207.0 L 830.0 207.0" class="edge"/>
+  <path d="M 275.0 399.0 L 275.0 430.0 L 810.0 430.0 L 810.0 399.0" class="edge"/>
+  <path d="M 690.0 362.0 L 720.0 362.0" class="edge"/>
+  <path d="M 900.0 362.0 L 960.0 362.0" class="edge"/>
+  <path d="M 1065.0 325.0 L 1065.0 286.0 L 920.0 286.0 L 920.0 244.0" class="edge"/>
+  <path d="M 1010.0 207.0 L 1070.0 207.0" class="edge"/>
+  <path d="M 1250.0 207.0 L 1310.0 207.0" class="edge"/>
+  <path d="M 1505.0 207.0 L 1545.0 207.0" class="edge"/>
+  <path d="M 1655.0 207.0 L 1685.0 207.0" class="edge"/>
+  <path d="M 1732.5 244.0 L 1732.5 295.0 L 1615.0 325.0" class="edge"/>
+  <path d="M 1520.0 362.0 L 1430.0 362.0 L 1290.0 450.0 L 900.0 450.0 L 900.0 399.0 L 997.8 399.0" class="edge"/>
+  <text x="1450" y="470" class="note">writeback 后更新同一份 SKILL.md，再进入下一轮 rollout</text>
+</svg>

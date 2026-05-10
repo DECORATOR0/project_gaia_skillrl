@@ -13,12 +13,41 @@ from .config import SystemConfig
 from .schemas import DatasetTask
 from .utils import ensure_dir, ensure_preferred_proxy_env, read_json, write_json
 
+_LEGACY_PROJECT_ROOTS = (Path("/data/xsy/project_gaia_skillrl"),)
+
 
 def _resolve_hf_token(explicit_token: str | None = None) -> str:
     token = (explicit_token or "").strip() or os.environ.get("HF_TOKEN", "").strip() or os.environ.get("HUGGINGFACE_TOKEN", "").strip()
     if not token:
         raise ValueError("HF token is required. Pass it explicitly or set HF_TOKEN.")
     return token
+
+
+def _project_root() -> Path:
+    override = os.environ.get("NLRL_PROJECT_ROOT", "").strip()
+    if override:
+        return Path(override).expanduser().resolve()
+    return Path(__file__).resolve().parents[1]
+
+
+def _relocate_project_path(value: str) -> str:
+    if not value:
+        return value
+
+    path = Path(value).expanduser()
+    project_root = _project_root()
+    if not path.is_absolute():
+        return str((project_root / path).resolve())
+
+    for legacy_root in _LEGACY_PROJECT_ROOTS:
+        try:
+            relative = path.relative_to(legacy_root)
+        except ValueError:
+            continue
+        if project_root != legacy_root or not path.exists():
+            return str((project_root / relative).resolve())
+
+    return str(path)
 
 
 def download_gaia_attachment(
@@ -170,6 +199,9 @@ def load_converted_dataset(path: Path) -> list[DatasetTask]:
     raw = read_json(path)
     tasks: list[DatasetTask] = []
     for item in raw.get("tasks", []):
+        data_dir = _relocate_project_path(str(item.get("data_dir", "")))
+        original_record = dict(item)
+        original_record["data_dir"] = data_dir
         tasks.append(
             DatasetTask(
                 task_id=str(item["task_id"]),
@@ -177,11 +209,11 @@ def load_converted_dataset(path: Path) -> list[DatasetTask]:
                 prompt=str(item.get("prompt", "")),
                 choices=[str(choice) for choice in item.get("choices", [])],
                 gold_answer=str(item.get("gold_answer", "")),
-                data_dir=str(item.get("data_dir", "")),
+                data_dir=data_dir,
                 file_list=[str(entry) for entry in item.get("file_list", [])],
                 gold_trajectory=list(item.get("gold_trajectory", [])),
                 gold_tool_names=[str(name) for name in item.get("gold_tool_names", [])],
-                original_record=item,
+                original_record=original_record,
                 metadata=item.get("metadata", {}) if isinstance(item.get("metadata", {}), dict) else {},
             )
         )

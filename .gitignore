@@ -5,8 +5,11 @@ __pycache__/
 .DS_Store
 gaia_skillrl.egg-info/
 
+# Dataset artifacts:
+# - data/converted/*.json is small and required for remote experiment launch.
+# - data/working/ contains materialized attachments and absolute symlinks; sync it with rsync -aL.
+# - data/cache/ is a Hugging Face cache and should stay local.
 data/cache/
-data/converted/
 data/raw/
 data/working/
 runs/
@@ -14,12 +17,20 @@ runtime_state/
 
 external_refs/gaia-agent/
 
-# Local experiment notes and design scratch docs
-实验设计与迭代/
+# Keep experiment text notes visible to git. Bulky local presentation,
+# paper, and image assets can be force-added individually when needed.
+实验设计与迭代/**/*.pdf
+实验设计与迭代/**/*.pptx
+实验设计与迭代/**/*.png
+实验设计与迭代/**/*.jpg
+实验设计与迭代/**/*.jpeg
+实验设计与迭代/与dch交流/
+实验设计与迭代/*远端算力网络接入记录.md
 
 # Local sample assets used for tool smoke/debugging
 /ca8753en.pdf
 /frame30s.png
+/integral_time_profile.png
 /hellofresh_ar_2021.pdf
 /part1.mp4
 /sales_data.csv
@@ -30,4 +41,9 @@ external_refs/gaia-agent/
 /tmp/
 /*.pdf
 /*.xlsx
+/*.png
+/*.jpg
+/*.jpeg
+/*.mp4
+/*.csv
 /words_alpha.txt
