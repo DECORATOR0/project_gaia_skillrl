@@ -48,7 +48,7 @@ def configure_base() -> None:
     )
     base.VLLM_GPU_MEMORY_UTILIZATION = os.environ.get(
         "GAIA_8B_REMOTE132_VLLM_GPU_MEMORY_UTILIZATION",
-        os.environ.get("GAIA_8B_BASELINE_VLLM_GPU_MEMORY_UTILIZATION", "0.72"),
+        os.environ.get("GAIA_8B_BASELINE_VLLM_GPU_MEMORY_UTILIZATION", "0.90"),
     )
 
 

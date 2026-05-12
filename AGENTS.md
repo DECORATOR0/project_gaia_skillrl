@@ -23,6 +23,7 @@
 - 上述 CPU-only 本地 eval 设置不影响远端 executor 性能；潜在影响只在本地工具 fallback：音频转写等本地 GPU 工具会走 CPU 或 API fallback。GAIA remote executor 队列默认优先保护 254 显存。
 - 区分外部中转 API 与自托管 remote132 vLLM：外部 API 不假设无限并发，SSSAI/Responses-SSE 先用低并发验收并观察 `服务器错误`、read timeout、capacity 等信号；自托管 remote132 可以让客户端提交多实验，但必须在队列/服务端侧做 per-lane 背压，限制每个 GPU endpoint 的并发、等待队列和超时，避免只是把卡顿从本地线程挪到远端请求队列。
 - 若把实验主体迁到 remote132 执行，按“远端 runner + 本地只同步结果”处理，不再使用 254 本地 evaluator 通过 SSH tunnel 循环调用远端模型的旧模式；启动前确认代码/数据/venv/搜索代理/API key/结果 rsync 路径/监控日志是否齐全。
+- remote132 上单卡自托管 Qwen3-8B vLLM baseline 默认优先用 `gpu_memory_utilization=0.90`，提升 KV cache 余量；只有启动日志显示 OOM、KV capacity 不足或显存被其它服务占用时，才降回 `0.72` 或更低。
 - GAIA 队列默认显式确认单题 wall-time 与工具子进程 wall-time cap；遇到 `tool_snippet.py` 或类似 runaway 子进程时，只释放该题并让 executor 继续收尾，不阻塞整批 dev/test 队列。
 - 新开 GAIA 实验队列时，若有明确需要后续验收的 run、日志、PID 或配置组合，同步更新 `/data/xsy/project_gaia_skillrl/实验设计与迭代/ZZ_当前待验收事项与版本索引.md`。
 - prompt、flow、role、executor、runtime 版本轴发生变化时，同步更新 `/data/xsy/project_gaia_skillrl/实验设计与迭代/ZZ_版本技能图草案.md`；普通数据切片、并发、GPU 分配只写 run 记录。
