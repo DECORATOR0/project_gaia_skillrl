@@ -17,8 +17,14 @@ runtime_state/
 
 external_refs/gaia-agent/
 
-# Keep experiment text notes visible to git. Bulky local presentation,
-# paper, and image assets can be force-added individually when needed.
+# Local/generated experiment notes and skill snapshots are machine-specific.
+# Already-tracked files remain tracked unless explicitly removed from git.
+实验设计与迭代/*.md
+实验设计与迭代/**/*.md
+skill_variants/
+
+# Bulky local presentation, paper, and image assets can be force-added
+# individually when needed.
 实验设计与迭代/**/*.pdf
 实验设计与迭代/**/*.pptx
 实验设计与迭代/**/*.png

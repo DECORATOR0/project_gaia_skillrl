@@ -1,0 +1,1423 @@
+{
+  "dataset_name": "gaia-skill-rl",
+  "dataset_version": "0.1.0",
+  "task_count": 42,
+  "task_schema_version": "gaia-skillrl-v1",
+  "config_name": "2023_all",
+  "split": "validation_dev",
+  "source_dataset_path": "data/converted/gaia_2023_all_validation_tasks.json",
+  "split_strategy": {
+    "source_dataset": "/data/xsy/project_gaia_skillrl/data/converted/gaia_2023_all_validation_dev_tasks.json",
+    "strategy": "contiguous_halves",
+    "label": "half1",
+    "run_prefix": "20260511_2332_9b_baseline_step48_devsplit",
+    "purpose": "9B direct baseline max_executor_steps=48 bottleneck check"
+  },
+  "level_counts": {
+    "2": 22,
+    "1": 13,
+    "3": 7
+  },
+  "tasks": [
+    {
+      "task_id": "c61d22de-5f6c-4958-a7f6-5e9707bd3466",
+      "source_type": "validation_dev",
+      "prompt": "A paper about AI regulation that was originally submitted to arXiv.org in June 2022 shows a figure with three axes, where each axis has a label word at both ends. Which of these words is used to describe a type of society in a Physics and Society article submitted to arXiv.org on August 11, 2016?",
+      "choices": [],
+      "gold_answer": "egalitarian",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/c61d22de-5f6c-4958-a7f6-5e9707bd3466",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "c61d22de-5f6c-4958-a7f6-5e9707bd3466",
+          "split": "validation",
+          "level": 2,
+          "question": "A paper about AI regulation that was originally submitted to arXiv.org in June 2022 shows a figure with three axes, where each axis has a label word at both ends. Which of these words is used to describe a type of society in a Physics and Society article submitted to arXiv.org on August 11, 2016?",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 0,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 0
+      }
+    },
+    {
+      "task_id": "17b5a6a3-bc87-42e8-b0fb-6ab0781ef2cc",
+      "source_type": "validation_dev",
+      "prompt": "I’m researching species that became invasive after people who kept them as pets released them. There’s a certain species of fish that was popularized as a pet by being the main character of the movie Finding Nemo. According to the USGS, where was this fish found as a nonnative species, before the year 2020? I need the answer formatted as the five-digit zip codes of the places the species was found, separated by commas if there is more than one place.",
+      "choices": [],
+      "gold_answer": "34689",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/17b5a6a3-bc87-42e8-b0fb-6ab0781ef2cc",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "17b5a6a3-bc87-42e8-b0fb-6ab0781ef2cc",
+          "split": "validation",
+          "level": 2,
+          "question": "I’m researching species that became invasive after people who kept them as pets released them. There’s a certain species of fish that was popularized as a pet by being the main character of the movie Finding Nemo. According to the USGS, where was this fish found as a nonnative species, before the year 2020? I need the answer formatted as the five-digit zip codes of the places the species was found, separated by commas if there is more than one place.",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 1,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 1
+      }
+    },
+    {
+      "task_id": "04a04a9b-226c-43fd-b319-d5e89743676f",
+      "source_type": "validation_dev",
+      "prompt": "If we assume all articles published by Nature in 2020 (articles, only, not book reviews/columns, etc) relied on statistical significance to justify their findings and they on average came to a p-value of 0.04, how many papers would be incorrect as to their claims of statistical significance? Round the value up to the next integer.",
+      "choices": [],
+      "gold_answer": "41",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/04a04a9b-226c-43fd-b319-d5e89743676f",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "04a04a9b-226c-43fd-b319-d5e89743676f",
+          "split": "validation",
+          "level": 2,
+          "question": "If we assume all articles published by Nature in 2020 (articles, only, not book reviews/columns, etc) relied on statistical significance to justify their findings and they on average came to a p-value of 0.04, how many papers would be incorrect as to their claims of statistical significance? Round the value up to the next integer.",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 2,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 2
+      }
+    },
+    {
+      "task_id": "14569e28-c88c-43e4-8c32-097d35b9a67d",
+      "source_type": "validation_dev",
+      "prompt": "In Unlambda, what exact charcter or text needs to be added to correct the following code to output \"For penguins\"? If what is needed is a character, answer with the name of the character. If there are different names for the character, use the shortest. The text location is not needed. Code:\n\n`r```````````.F.o.r. .p.e.n.g.u.i.n.si",
+      "choices": [],
+      "gold_answer": "backtick",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/14569e28-c88c-43e4-8c32-097d35b9a67d",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "14569e28-c88c-43e4-8c32-097d35b9a67d",
+          "split": "validation",
+          "level": 2,
+          "question": "In Unlambda, what exact charcter or text needs to be added to correct the following code to output \"For penguins\"? If what is needed is a character, answer with the name of the character. If there are different names for the character, use the shortest. The text location is not needed. Code:\n\n`r```````````.F.o.r. .p.e.n.g.u.i.n.si",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 3,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 3
+      }
+    },
+    {
+      "task_id": "e1fc63a2-da7a-432f-be78-7c4a95598703",
+      "source_type": "validation_dev",
+      "prompt": "If Eliud Kipchoge could maintain his record-making marathon pace indefinitely, how many thousand hours would it take him to run the distance between the Earth and the Moon its closest approach? Please use the minimum perigee value on the Wikipedia page for the Moon when carrying out your calculation. Round your result to the nearest 1000 hours and do not use any comma separators if necessary.",
+      "choices": [],
+      "gold_answer": "17",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/e1fc63a2-da7a-432f-be78-7c4a95598703",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 1,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "e1fc63a2-da7a-432f-be78-7c4a95598703",
+          "split": "validation",
+          "level": 1,
+          "question": "If Eliud Kipchoge could maintain his record-making marathon pace indefinitely, how many thousand hours would it take him to run the distance between the Earth and the Moon its closest approach? Please use the minimum perigee value on the Wikipedia page for the Moon when carrying out your calculation. Round your result to the nearest 1000 hours and do not use any comma separators if necessary.",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 4,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 4
+      }
+    },
+    {
+      "task_id": "32102e3e-d12a-4209-9163-7b3a104efe5d",
+      "source_type": "validation_dev",
+      "prompt": "The attached spreadsheet shows the inventory for a movie and video game rental store in Seattle, Washington. What is the title of the oldest Blu-Ray recorded in this spreadsheet? Return it as appearing in the spreadsheet.",
+      "choices": [],
+      "gold_answer": "Time-Parking 2: Parallel Universe",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/32102e3e-d12a-4209-9163-7b3a104efe5d",
+      "file_list": [
+        "32102e3e-d12a-4209-9163-7b3a104efe5d.xlsx",
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "32102e3e-d12a-4209-9163-7b3a104efe5d.xlsx",
+        "file_path": "2023/validation/32102e3e-d12a-4209-9163-7b3a104efe5d.xlsx",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "32102e3e-d12a-4209-9163-7b3a104efe5d",
+          "split": "validation",
+          "level": 2,
+          "question": "The attached spreadsheet shows the inventory for a movie and video game rental store in Seattle, Washington. What is the title of the oldest Blu-Ray recorded in this spreadsheet? Return it as appearing in the spreadsheet.",
+          "file_name": "32102e3e-d12a-4209-9163-7b3a104efe5d.xlsx",
+          "file_path": "2023/validation/32102e3e-d12a-4209-9163-7b3a104efe5d.xlsx",
+          "local_attachment_path": "32102e3e-d12a-4209-9163-7b3a104efe5d.xlsx"
+        },
+        "dataset_index": 5,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 5
+      }
+    },
+    {
+      "task_id": "8e867cd7-cff9-4e6c-867a-ff5ddc2550be",
+      "source_type": "validation_dev",
+      "prompt": "How many studio albums were published by Mercedes Sosa between 2000 and 2009 (included)? You can use the latest 2022 version of english wikipedia.",
+      "choices": [],
+      "gold_answer": "3",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/8e867cd7-cff9-4e6c-867a-ff5ddc2550be",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 1,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "8e867cd7-cff9-4e6c-867a-ff5ddc2550be",
+          "split": "validation",
+          "level": 1,
+          "question": "How many studio albums were published by Mercedes Sosa between 2000 and 2009 (included)? You can use the latest 2022 version of english wikipedia.",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 6,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 6
+      }
+    },
+    {
+      "task_id": "3627a8be-a77f-41bb-b807-7e1bd4c0ebdf",
+      "source_type": "validation_dev",
+      "prompt": "The object in the British Museum's collection with a museum number of 2012,5015.17 is the shell of a particular mollusk species. According to the abstract of a research article published in Science Advances in 2021, beads made from the shells of this species were found that are at least how many thousands of years old?",
+      "choices": [],
+      "gold_answer": "142",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/3627a8be-a77f-41bb-b807-7e1bd4c0ebdf",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "3627a8be-a77f-41bb-b807-7e1bd4c0ebdf",
+          "split": "validation",
+          "level": 2,
+          "question": "The object in the British Museum's collection with a museum number of 2012,5015.17 is the shell of a particular mollusk species. According to the abstract of a research article published in Science Advances in 2021, beads made from the shells of this species were found that are at least how many thousands of years old?",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 7,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 7
+      }
+    },
+    {
+      "task_id": "7619a514-5fa8-43ef-9143-83b66a43d7a4",
+      "source_type": "validation_dev",
+      "prompt": "According to github, when was Regression added to the oldest closed numpy.polynomial issue that has the Regression label in MM/DD/YY?",
+      "choices": [],
+      "gold_answer": "04/15/18",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/7619a514-5fa8-43ef-9143-83b66a43d7a4",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "7619a514-5fa8-43ef-9143-83b66a43d7a4",
+          "split": "validation",
+          "level": 2,
+          "question": "According to github, when was Regression added to the oldest closed numpy.polynomial issue that has the Regression label in MM/DD/YY?",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 8,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 8
+      }
+    },
+    {
+      "task_id": "ec09fa32-d03f-4bf8-84b0-1f16922c3ae4",
+      "source_type": "validation_dev",
+      "prompt": "Here's a fun riddle that I think you'll enjoy.\n\nYou have been selected to play the final round of the hit new game show \"Pick That Ping-Pong\". In this round, you will be competing for a large cash prize. Your job will be to pick one of several different numbered ping-pong balls, and then the game will commence. The host describes how the game works.\n\nA device consisting of a winding clear ramp and a series of pistons controls the outcome of the game. The ramp feeds balls onto a platform. The platform has room for three ping-pong balls at a time. The three balls on the platform are each aligned with one of three pistons. At each stage of the game, one of the three pistons will randomly fire, ejecting the ball it strikes. If the piston ejects the ball in the first position on the platform the balls in the second and third position on the platform each advance one space, and the next ball on the ramp advances to the third position. If the piston ejects the ball in the second position, the ball in the first position is released and rolls away, the ball in the third position advances two spaces to occupy the first position, and the next two balls on the ramp advance to occupy the second and third positions on the platform. If the piston ejects the ball in the third position, the ball in the first position is released and rolls away, the ball in the second position advances one space to occupy the first position, and the next two balls on the ramp advance to occupy the second and third positions on the platform.\n\nThe ramp begins with 100 numbered ping-pong balls, arranged in ascending order from 1 to 100. The host activates the machine and the first three balls, numbered 1, 2, and 3, advance to the platform. Before the random firing of the pistons begins, you are asked which of the 100 balls you would like to pick. If your pick is ejected by one of the pistons, you win the grand prize, $10,000.\n\nWhich ball should you choose to maximize your odds of winning the big prize? Please provide your answer as the number of the ball selected.",
+      "choices": [],
+      "gold_answer": "3",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/ec09fa32-d03f-4bf8-84b0-1f16922c3ae4",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 1,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "ec09fa32-d03f-4bf8-84b0-1f16922c3ae4",
+          "split": "validation",
+          "level": 1,
+          "question": "Here's a fun riddle that I think you'll enjoy.\n\nYou have been selected to play the final round of the hit new game show \"Pick That Ping-Pong\". In this round, you will be competing for a large cash prize. Your job will be to pick one of several different numbered ping-pong balls, and then the game will commence. The host describes how the game works.\n\nA device consisting of a winding clear ramp and a series of pistons controls the outcome of the game. The ramp feeds balls onto a platform. The platform has room for three ping-pong balls at a time. The three balls on the platform are each aligned with one of three pistons. At each stage of the game, one of the three pistons will randomly fire, ejecting the ball it strikes. If the piston ejects the ball in the first position on the platform the balls in the second and third position on the platform each advance one space, and the next ball on the ramp advances to the third position. If the piston ejects the ball in the second position, the ball in the first position is released and rolls away, the ball in the third position advances two spaces to occupy the first position, and the next two balls on the ramp advance to occupy the second and third positions on the platform. If the piston ejects the ball in the third position, the ball in the first position is released and rolls away, the ball in the second position advances one space to occupy the first position, and the next two balls on the ramp advance to occupy the second and third positions on the platform.\n\nThe ramp begins with 100 numbered ping-pong balls, arranged in ascending order from 1 to 100. The host activates the machine and the first three balls, numbered 1, 2, and 3, advance to the platform. Before the random firing of the pistons begins, you are asked which of the 100 balls you would like to pick. If your pick is ejected by one of the pistons, you win the grand prize, $10,000.\n\nWhich ball should you choose to maximize your odds of winning the big prize? Please provide your answer as the number of the ball selected.",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 9,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 9
+      }
+    },
+    {
+      "task_id": "676e5e31-a554-4acc-9286-b60d90a92d26",
+      "source_type": "validation_dev",
+      "prompt": "In July 2, 1959 United States standards for grades of processed fruits, vegetables, and certain other products listed as dehydrated, consider the items in the \"dried and dehydrated section\" specifically marked as dehydrated along with any items in the Frozen/Chilled section that contain the whole name of the item, but not if they're marked Chilled. As of August 2023, what is the percentage (to the nearest percent) of those standards that have been superseded by a new version since the date given in the 1959 standards?",
+      "choices": [],
+      "gold_answer": "86",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/676e5e31-a554-4acc-9286-b60d90a92d26",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 3,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "676e5e31-a554-4acc-9286-b60d90a92d26",
+          "split": "validation",
+          "level": 3,
+          "question": "In July 2, 1959 United States standards for grades of processed fruits, vegetables, and certain other products listed as dehydrated, consider the items in the \"dried and dehydrated section\" specifically marked as dehydrated along with any items in the Frozen/Chilled section that contain the whole name of the item, but not if they're marked Chilled. As of August 2023, what is the percentage (to the nearest percent) of those standards that have been superseded by a new version since the date given in the 1959 standards?",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 10,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 10
+      }
+    },
+    {
+      "task_id": "7dd30055-0198-452e-8c25-f73dbe27dcb8",
+      "source_type": "validation_dev",
+      "prompt": "Using the Biopython library in Python, parse the PDB file of the protein identified by the PDB ID 5wb7 from the RCSB Protein Data Bank. Calculate the distance between the first and second atoms as they are listed in the PDB file. Report the answer in Angstroms, rounded to the nearest picometer.",
+      "choices": [],
+      "gold_answer": "1.456",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/7dd30055-0198-452e-8c25-f73dbe27dcb8",
+      "file_list": [
+        "7dd30055-0198-452e-8c25-f73dbe27dcb8.pdb",
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "7dd30055-0198-452e-8c25-f73dbe27dcb8.pdb",
+        "file_path": "2023/validation/7dd30055-0198-452e-8c25-f73dbe27dcb8.pdb",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "7dd30055-0198-452e-8c25-f73dbe27dcb8",
+          "split": "validation",
+          "level": 2,
+          "question": "Using the Biopython library in Python, parse the PDB file of the protein identified by the PDB ID 5wb7 from the RCSB Protein Data Bank. Calculate the distance between the first and second atoms as they are listed in the PDB file. Report the answer in Angstroms, rounded to the nearest picometer.",
+          "file_name": "7dd30055-0198-452e-8c25-f73dbe27dcb8.pdb",
+          "file_path": "2023/validation/7dd30055-0198-452e-8c25-f73dbe27dcb8.pdb",
+          "local_attachment_path": "7dd30055-0198-452e-8c25-f73dbe27dcb8.pdb"
+        },
+        "dataset_index": 11,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 11
+      }
+    },
+    {
+      "task_id": "2a649bb1-795f-4a01-b3be-9a01868dae73",
+      "source_type": "validation_dev",
+      "prompt": "What are the EC numbers of the two most commonly used chemicals for the virus testing method in the paper about SPFMV and SPCSV in the Pearl Of Africa from 2016? Return the semicolon-separated numbers in the order of the alphabetized chemicals.",
+      "choices": [],
+      "gold_answer": "3.1.3.1; 1.11.1.7",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/2a649bb1-795f-4a01-b3be-9a01868dae73",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "2a649bb1-795f-4a01-b3be-9a01868dae73",
+          "split": "validation",
+          "level": 2,
+          "question": "What are the EC numbers of the two most commonly used chemicals for the virus testing method in the paper about SPFMV and SPCSV in the Pearl Of Africa from 2016? Return the semicolon-separated numbers in the order of the alphabetized chemicals.",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 12,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 12
+      }
+    },
+    {
+      "task_id": "87c610df-bef7-4932-b950-1d83ef4e282b",
+      "source_type": "validation_dev",
+      "prompt": "In April of 1977, who was the Prime Minister of the first place mentioned by name in the Book of Esther (in the New International Version)?",
+      "choices": [],
+      "gold_answer": "Morarji Desai",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/87c610df-bef7-4932-b950-1d83ef4e282b",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "87c610df-bef7-4932-b950-1d83ef4e282b",
+          "split": "validation",
+          "level": 2,
+          "question": "In April of 1977, who was the Prime Minister of the first place mentioned by name in the Book of Esther (in the New International Version)?",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 13,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 13
+      }
+    },
+    {
+      "task_id": "624cbf11-6a41-4692-af9c-36b3e5ca3130",
+      "source_type": "validation_dev",
+      "prompt": "What's the last line of the rhyme under the flavor name on the headstone visible in the background of the photo of the oldest flavor's headstone in the Ben & Jerry's online flavor graveyard as of the end of 2022?",
+      "choices": [],
+      "gold_answer": "So we had to let it die.",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/624cbf11-6a41-4692-af9c-36b3e5ca3130",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "624cbf11-6a41-4692-af9c-36b3e5ca3130",
+          "split": "validation",
+          "level": 2,
+          "question": "What's the last line of the rhyme under the flavor name on the headstone visible in the background of the photo of the oldest flavor's headstone in the Ben & Jerry's online flavor graveyard as of the end of 2022?",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 14,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 14
+      }
+    },
+    {
+      "task_id": "dd3c7503-f62a-4bd0-9f67-1b63b94194cc",
+      "source_type": "validation_dev",
+      "prompt": "Use density measures from the chemistry materials licensed by Marisa Alviar-Agnew & Henry Agnew under the CK-12 license in LibreText's Introductory Chemistry materials as compiled 08/21/2023.\n\nI have a gallon of honey and a gallon of mayonnaise at 25C. I remove one cup of honey at a time from the gallon of honey. How many times will I need to remove a cup to have the honey weigh less than the mayonaise? Assume the containers themselves weigh the same.",
+      "choices": [],
+      "gold_answer": "6",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/dd3c7503-f62a-4bd0-9f67-1b63b94194cc",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "dd3c7503-f62a-4bd0-9f67-1b63b94194cc",
+          "split": "validation",
+          "level": 2,
+          "question": "Use density measures from the chemistry materials licensed by Marisa Alviar-Agnew & Henry Agnew under the CK-12 license in LibreText's Introductory Chemistry materials as compiled 08/21/2023.\n\nI have a gallon of honey and a gallon of mayonnaise at 25C. I remove one cup of honey at a time from the gallon of honey. How many times will I need to remove a cup to have the honey weigh less than the mayonaise? Assume the containers themselves weigh the same.",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 15,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 15
+      }
+    },
+    {
+      "task_id": "5d0080cb-90d7-4712-bc33-848150e917d3",
+      "source_type": "validation_dev",
+      "prompt": "What was the volume in m^3 of the fish bag that was calculated in the University of Leicester paper \"Can Hiccup Supply Enough Fish to Maintain a Dragon’s Diet?\"",
+      "choices": [],
+      "gold_answer": "0.1777",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/5d0080cb-90d7-4712-bc33-848150e917d3",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 1,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "5d0080cb-90d7-4712-bc33-848150e917d3",
+          "split": "validation",
+          "level": 1,
+          "question": "What was the volume in m^3 of the fish bag that was calculated in the University of Leicester paper \"Can Hiccup Supply Enough Fish to Maintain a Dragon’s Diet?\"",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 16,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 16
+      }
+    },
+    {
+      "task_id": "bec74516-02fc-48dc-b202-55e78d0e17cf",
+      "source_type": "validation_dev",
+      "prompt": "What is the average number of pre-2020 works on the open researcher and contributor identification pages of the people whose identification is in this file?",
+      "choices": [],
+      "gold_answer": "26.4",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/bec74516-02fc-48dc-b202-55e78d0e17cf",
+      "file_list": [
+        "bec74516-02fc-48dc-b202-55e78d0e17cf.jsonld",
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 3,
+        "file_name": "bec74516-02fc-48dc-b202-55e78d0e17cf.jsonld",
+        "file_path": "2023/validation/bec74516-02fc-48dc-b202-55e78d0e17cf.jsonld",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "bec74516-02fc-48dc-b202-55e78d0e17cf",
+          "split": "validation",
+          "level": 3,
+          "question": "What is the average number of pre-2020 works on the open researcher and contributor identification pages of the people whose identification is in this file?",
+          "file_name": "bec74516-02fc-48dc-b202-55e78d0e17cf.jsonld",
+          "file_path": "2023/validation/bec74516-02fc-48dc-b202-55e78d0e17cf.jsonld",
+          "local_attachment_path": "bec74516-02fc-48dc-b202-55e78d0e17cf.jsonld"
+        },
+        "dataset_index": 17,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 17
+      }
+    },
+    {
+      "task_id": "a1e91b78-d3d8-4675-bb8d-62741b4b68a6",
+      "source_type": "validation_dev",
+      "prompt": "In the video https://www.youtube.com/watch?v=L1vXCYZAYYM, what is the highest number of bird species to be on camera simultaneously?",
+      "choices": [],
+      "gold_answer": "3",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/a1e91b78-d3d8-4675-bb8d-62741b4b68a6",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 1,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "a1e91b78-d3d8-4675-bb8d-62741b4b68a6",
+          "split": "validation",
+          "level": 1,
+          "question": "In the video https://www.youtube.com/watch?v=L1vXCYZAYYM, what is the highest number of bird species to be on camera simultaneously?",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 18,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 18
+      }
+    },
+    {
+      "task_id": "46719c30-f4c3-4cad-be07-d5cb21eee6bb",
+      "source_type": "validation_dev",
+      "prompt": "Of the authors (First M. Last) that worked on the paper \"Pie Menus or Linear Menus, Which Is Better?\" in 2015, what was the title of the first paper authored by the one that had authored prior papers?",
+      "choices": [],
+      "gold_answer": "Mapping Human Oriented Information to Software Agents for Online Systems Usage",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/46719c30-f4c3-4cad-be07-d5cb21eee6bb",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 1,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "46719c30-f4c3-4cad-be07-d5cb21eee6bb",
+          "split": "validation",
+          "level": 1,
+          "question": "Of the authors (First M. Last) that worked on the paper \"Pie Menus or Linear Menus, Which Is Better?\" in 2015, what was the title of the first paper authored by the one that had authored prior papers?",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 19,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 19
+      }
+    },
+    {
+      "task_id": "df6561b2-7ee5-4540-baab-5095f742716a",
+      "source_type": "validation_dev",
+      "prompt": "When you take the average of the standard population deviation of the red numbers and the standard sample deviation of the green numbers in this image using the statistics module in Python 3.11, what is the result rounded to the nearest three decimal points?",
+      "choices": [],
+      "gold_answer": "17.056",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/df6561b2-7ee5-4540-baab-5095f742716a",
+      "file_list": [
+        "df6561b2-7ee5-4540-baab-5095f742716a.png",
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "df6561b2-7ee5-4540-baab-5095f742716a.png",
+        "file_path": "2023/validation/df6561b2-7ee5-4540-baab-5095f742716a.png",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "df6561b2-7ee5-4540-baab-5095f742716a",
+          "split": "validation",
+          "level": 2,
+          "question": "When you take the average of the standard population deviation of the red numbers and the standard sample deviation of the green numbers in this image using the statistics module in Python 3.11, what is the result rounded to the nearest three decimal points?",
+          "file_name": "df6561b2-7ee5-4540-baab-5095f742716a.png",
+          "file_path": "2023/validation/df6561b2-7ee5-4540-baab-5095f742716a.png",
+          "local_attachment_path": "df6561b2-7ee5-4540-baab-5095f742716a.png"
+        },
+        "dataset_index": 20,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 20
+      }
+    },
+    {
+      "task_id": "00d579ea-0889-4fd9-a771-2c8d79835c8d",
+      "source_type": "validation_dev",
+      "prompt": "Assuming scientists in the famous youtube video The Thinking Machine (Artificial Intelligence in the 1960s) were interviewed the same year, what is the name of the scientist predicting the sooner thinking machines or robots? Answer using the format First name Last name",
+      "choices": [],
+      "gold_answer": "Claude Shannon",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/00d579ea-0889-4fd9-a771-2c8d79835c8d",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 3,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "00d579ea-0889-4fd9-a771-2c8d79835c8d",
+          "split": "validation",
+          "level": 3,
+          "question": "Assuming scientists in the famous youtube video The Thinking Machine (Artificial Intelligence in the 1960s) were interviewed the same year, what is the name of the scientist predicting the sooner thinking machines or robots? Answer using the format First name Last name",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 21,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 21
+      }
+    },
+    {
+      "task_id": "4b6bb5f7-f634-410e-815d-e673ab7f8632",
+      "source_type": "validation_dev",
+      "prompt": "In Series 9, Episode 11 of Doctor Who, the Doctor is trapped inside an ever-shifting maze. What is this location called in the official script for the episode? Give the setting exactly as it appears in the first scene heading.",
+      "choices": [],
+      "gold_answer": "THE CASTLE",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/4b6bb5f7-f634-410e-815d-e673ab7f8632",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 1,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "4b6bb5f7-f634-410e-815d-e673ab7f8632",
+          "split": "validation",
+          "level": 1,
+          "question": "In Series 9, Episode 11 of Doctor Who, the Doctor is trapped inside an ever-shifting maze. What is this location called in the official script for the episode? Give the setting exactly as it appears in the first scene heading.",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 22,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 22
+      }
+    },
+    {
+      "task_id": "f0f46385-fc03-4599-b5d3-f56496c3e69f",
+      "source_type": "validation_dev",
+      "prompt": "In terms of geographical distance between capital cities, which 2 countries are the furthest from each other within the ASEAN bloc according to wikipedia? Answer using a comma separated list, ordering the countries by alphabetical order.",
+      "choices": [],
+      "gold_answer": "Indonesia, Myanmar",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/f0f46385-fc03-4599-b5d3-f56496c3e69f",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "f0f46385-fc03-4599-b5d3-f56496c3e69f",
+          "split": "validation",
+          "level": 2,
+          "question": "In terms of geographical distance between capital cities, which 2 countries are the furthest from each other within the ASEAN bloc according to wikipedia? Answer using a comma separated list, ordering the countries by alphabetical order.",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 23,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 23
+      }
+    },
+    {
+      "task_id": "384d0dd8-e8a4-4cfe-963c-d37f256e7662",
+      "source_type": "validation_dev",
+      "prompt": "In the NCATS PubChem compound database for Food Additive Status classification, find the compound that has a molecular weight of 100 g/mol or less, 6 heavy atoms, 1 or fewer hydrogen bond acceptors, and a complexity between 10 and 15. Of the shared gene-chemical co-occurrences between its two possible enzyme transformations, what is the PubChem CID of the heaviest by molecular weight?",
+      "choices": [],
+      "gold_answer": "4192",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/384d0dd8-e8a4-4cfe-963c-d37f256e7662",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 3,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "384d0dd8-e8a4-4cfe-963c-d37f256e7662",
+          "split": "validation",
+          "level": 3,
+          "question": "In the NCATS PubChem compound database for Food Additive Status classification, find the compound that has a molecular weight of 100 g/mol or less, 6 heavy atoms, 1 or fewer hydrogen bond acceptors, and a complexity between 10 and 15. Of the shared gene-chemical co-occurrences between its two possible enzyme transformations, what is the PubChem CID of the heaviest by molecular weight?",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 24,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 24
+      }
+    },
+    {
+      "task_id": "e4e91f1c-1dcd-439e-9fdd-cb976f5293fd",
+      "source_type": "validation_dev",
+      "prompt": "I need to fact-check a citation. This is the citation from the bibliography:\n\nGreetham, David. \"Uncoupled: OR, How I Lost My Author(s).\" Textual Cultures: Texts, Contexts, Interpretation, vol. 3 no. 1, 2008, p. 45-46. Project MUSE, doi:10.2979/tex.2008.3.1.44.\n\nAnd this is the in-line citation:\n\nOur relationship with the authors of the works we read can often be “obscured not by a \"cloak of print\" but by the veil of scribal confusion and mis-transmission” (Greetham 45-46).\n\nDoes the quoted text match what is actually in the article? If Yes, answer Yes, otherwise, give me the word in my citation that does not match with the correct one (without any article).",
+      "choices": [],
+      "gold_answer": "cloak",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/e4e91f1c-1dcd-439e-9fdd-cb976f5293fd",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "e4e91f1c-1dcd-439e-9fdd-cb976f5293fd",
+          "split": "validation",
+          "level": 2,
+          "question": "I need to fact-check a citation. This is the citation from the bibliography:\n\nGreetham, David. \"Uncoupled: OR, How I Lost My Author(s).\" Textual Cultures: Texts, Contexts, Interpretation, vol. 3 no. 1, 2008, p. 45-46. Project MUSE, doi:10.2979/tex.2008.3.1.44.\n\nAnd this is the in-line citation:\n\nOur relationship with the authors of the works we read can often be “obscured not by a \"cloak of print\" but by the veil of scribal confusion and mis-transmission” (Greetham 45-46).\n\nDoes the quoted text match what is actually in the article? If Yes, answer Yes, otherwise, give me the word in my citation that does not match with the correct one (without any article).",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 25,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 25
+      }
+    },
+    {
+      "task_id": "56137764-b4e0-45b8-9c52-1866420c3df5",
+      "source_type": "validation_dev",
+      "prompt": "Which contributor to the version of OpenCV where support was added for the Mask-RCNN model has the same name as a former Chinese head of government when the names are transliterated to the Latin alphabet?",
+      "choices": [],
+      "gold_answer": "Li Peng",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/56137764-b4e0-45b8-9c52-1866420c3df5",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "56137764-b4e0-45b8-9c52-1866420c3df5",
+          "split": "validation",
+          "level": 2,
+          "question": "Which contributor to the version of OpenCV where support was added for the Mask-RCNN model has the same name as a former Chinese head of government when the names are transliterated to the Latin alphabet?",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 26,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 26
+      }
+    },
+    {
+      "task_id": "de9887f5-ead8-4727-876f-5a4078f8598c",
+      "source_type": "validation_dev",
+      "prompt": "What integer-rounded percentage of the total length of the harlequin shrimp recorded in Omar Valencfia-Mendez 2017 paper was the sea star fed to the same type of shrimp in G. Curt Fiedler's 2002 paper?",
+      "choices": [],
+      "gold_answer": "22",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/de9887f5-ead8-4727-876f-5a4078f8598c",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 3,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "de9887f5-ead8-4727-876f-5a4078f8598c",
+          "split": "validation",
+          "level": 3,
+          "question": "What integer-rounded percentage of the total length of the harlequin shrimp recorded in Omar Valencfia-Mendez 2017 paper was the sea star fed to the same type of shrimp in G. Curt Fiedler's 2002 paper?",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 27,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 27
+      }
+    },
+    {
+      "task_id": "cffe0e32-c9a6-4c52-9877-78ceb4aaa9fb",
+      "source_type": "validation_dev",
+      "prompt": "An office held a Secret Santa gift exchange where each of its twelve employees was assigned one other employee in the group to present with a gift. Each employee filled out a profile including three likes or hobbies. On the day of the gift exchange, only eleven gifts were given, each one specific to one of the recipient's interests. Based on the information in the document, who did not give a gift?",
+      "choices": [],
+      "gold_answer": "Fred",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/cffe0e32-c9a6-4c52-9877-78ceb4aaa9fb",
+      "file_list": [
+        "cffe0e32-c9a6-4c52-9877-78ceb4aaa9fb.docx",
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 1,
+        "file_name": "cffe0e32-c9a6-4c52-9877-78ceb4aaa9fb.docx",
+        "file_path": "2023/validation/cffe0e32-c9a6-4c52-9877-78ceb4aaa9fb.docx",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "cffe0e32-c9a6-4c52-9877-78ceb4aaa9fb",
+          "split": "validation",
+          "level": 1,
+          "question": "An office held a Secret Santa gift exchange where each of its twelve employees was assigned one other employee in the group to present with a gift. Each employee filled out a profile including three likes or hobbies. On the day of the gift exchange, only eleven gifts were given, each one specific to one of the recipient's interests. Based on the information in the document, who did not give a gift?",
+          "file_name": "cffe0e32-c9a6-4c52-9877-78ceb4aaa9fb.docx",
+          "file_path": "2023/validation/cffe0e32-c9a6-4c52-9877-78ceb4aaa9fb.docx",
+          "local_attachment_path": "cffe0e32-c9a6-4c52-9877-78ceb4aaa9fb.docx"
+        },
+        "dataset_index": 28,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 28
+      }
+    },
+    {
+      "task_id": "8b3379c0-0981-4f5b-8407-6444610cb212",
+      "source_type": "validation_dev",
+      "prompt": "What is the maximum length in meters of #9 in the first National Geographic short on YouTube that was ever released according to the Monterey Bay Aquarium website? Just give the number.",
+      "choices": [],
+      "gold_answer": "1.8",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/8b3379c0-0981-4f5b-8407-6444610cb212",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "8b3379c0-0981-4f5b-8407-6444610cb212",
+          "split": "validation",
+          "level": 2,
+          "question": "What is the maximum length in meters of #9 in the first National Geographic short on YouTube that was ever released according to the Monterey Bay Aquarium website? Just give the number.",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 29,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 29
+      }
+    },
+    {
+      "task_id": "0ff53813-3367-4f43-bcbd-3fd725c1bf4b",
+      "source_type": "validation_dev",
+      "prompt": "What two-word type of model did Manash Pratim Kashyap's and PS Fader's studies in customer retention studies published during 2018-2019 have in common (no punctuation)?",
+      "choices": [],
+      "gold_answer": "beta geometric",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/0ff53813-3367-4f43-bcbd-3fd725c1bf4b",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "0ff53813-3367-4f43-bcbd-3fd725c1bf4b",
+          "split": "validation",
+          "level": 2,
+          "question": "What two-word type of model did Manash Pratim Kashyap's and PS Fader's studies in customer retention studies published during 2018-2019 have in common (no punctuation)?",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 30,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 30
+      }
+    },
+    {
+      "task_id": "983bba7c-c092-455f-b6c9-7857003d48fc",
+      "source_type": "validation_dev",
+      "prompt": "What animals that were mentioned in both Ilias Lagkouvardos's and Olga Tapia's papers on the alvei species of the genus named for Copenhagen outside the bibliographies were also present in the 2021 article cited on the alvei species' Wikipedia page about a multicenter, randomized, double-blind study?",
+      "choices": [],
+      "gold_answer": "mice",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/983bba7c-c092-455f-b6c9-7857003d48fc",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 3,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "983bba7c-c092-455f-b6c9-7857003d48fc",
+          "split": "validation",
+          "level": 3,
+          "question": "What animals that were mentioned in both Ilias Lagkouvardos's and Olga Tapia's papers on the alvei species of the genus named for Copenhagen outside the bibliographies were also present in the 2021 article cited on the alvei species' Wikipedia page about a multicenter, randomized, double-blind study?",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 31,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 31
+      }
+    },
+    {
+      "task_id": "a7feb290-76bb-4cb7-8800-7edaf7954f2f",
+      "source_type": "validation_dev",
+      "prompt": "How many High Energy Physics - Lattice articles listed in January 2020 on Arxiv had ps versions available?",
+      "choices": [],
+      "gold_answer": "31",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/a7feb290-76bb-4cb7-8800-7edaf7954f2f",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "a7feb290-76bb-4cb7-8800-7edaf7954f2f",
+          "split": "validation",
+          "level": 2,
+          "question": "How many High Energy Physics - Lattice articles listed in January 2020 on Arxiv had ps versions available?",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 32,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 32
+      }
+    },
+    {
+      "task_id": "b4cc024b-3f5e-480e-b96a-6656493255b5",
+      "source_type": "validation_dev",
+      "prompt": "The photograph in the Whitney Museum of American Art's collection with accession number 2022.128 shows a person holding a book. Which military unit did the author of this book join in 1813? Answer without using articles.",
+      "choices": [],
+      "gold_answer": "Russian-German Legion",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/b4cc024b-3f5e-480e-b96a-6656493255b5",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "b4cc024b-3f5e-480e-b96a-6656493255b5",
+          "split": "validation",
+          "level": 2,
+          "question": "The photograph in the Whitney Museum of American Art's collection with accession number 2022.128 shows a person holding a book. Which military unit did the author of this book join in 1813? Answer without using articles.",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 33,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 33
+      }
+    },
+    {
+      "task_id": "2d83110e-a098-4ebb-9987-066c06fa42d0",
+      "source_type": "validation_dev",
+      "prompt": ".rewsna eht sa \"tfel\" drow eht fo etisoppo eht etirw ,ecnetnes siht dnatsrednu uoy fI",
+      "choices": [],
+      "gold_answer": "Right",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/2d83110e-a098-4ebb-9987-066c06fa42d0",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 1,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "2d83110e-a098-4ebb-9987-066c06fa42d0",
+          "split": "validation",
+          "level": 1,
+          "question": ".rewsna eht sa \"tfel\" drow eht fo etisoppo eht etirw ,ecnetnes siht dnatsrednu uoy fI",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 34,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 34
+      }
+    },
+    {
+      "task_id": "33d8ea3b-6c6b-4ff1-803d-7e270dea8a57",
+      "source_type": "validation_dev",
+      "prompt": "What is the minimum number of page links a person must click on to go from the english Wikipedia page on The Lord of the Rings (the book) to the english Wikipedia page on A Song of Ice and Fire (the book series)? In your count, include each link you would click on to get to the page. Use the pages as they appeared at the end of the day on July 3, 2023.",
+      "choices": [],
+      "gold_answer": "2",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/33d8ea3b-6c6b-4ff1-803d-7e270dea8a57",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "33d8ea3b-6c6b-4ff1-803d-7e270dea8a57",
+          "split": "validation",
+          "level": 2,
+          "question": "What is the minimum number of page links a person must click on to go from the english Wikipedia page on The Lord of the Rings (the book) to the english Wikipedia page on A Song of Ice and Fire (the book series)? In your count, include each link you would click on to get to the page. Use the pages as they appeared at the end of the day on July 3, 2023.",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 35,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 35
+      }
+    },
+    {
+      "task_id": "5cfb274c-0207-4aa7-9575-6ac0bd95d9b2",
+      "source_type": "validation_dev",
+      "prompt": "Each cell in the attached spreadsheet represents a plot of land. The color of the cell indicates who owns that plot. Green cells are plots owned by Earl Smith. Can Earl walk through every plot he owns (and no other plots) and return to his starting plot without backtracking? For this question, consider backtracking to be any instance where Earl would enter a plot of land he had already entered since leaving his starting plot.",
+      "choices": [],
+      "gold_answer": "No",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/5cfb274c-0207-4aa7-9575-6ac0bd95d9b2",
+      "file_list": [
+        "5cfb274c-0207-4aa7-9575-6ac0bd95d9b2.xlsx",
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 1,
+        "file_name": "5cfb274c-0207-4aa7-9575-6ac0bd95d9b2.xlsx",
+        "file_path": "2023/validation/5cfb274c-0207-4aa7-9575-6ac0bd95d9b2.xlsx",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "5cfb274c-0207-4aa7-9575-6ac0bd95d9b2",
+          "split": "validation",
+          "level": 1,
+          "question": "Each cell in the attached spreadsheet represents a plot of land. The color of the cell indicates who owns that plot. Green cells are plots owned by Earl Smith. Can Earl walk through every plot he owns (and no other plots) and return to his starting plot without backtracking? For this question, consider backtracking to be any instance where Earl would enter a plot of land he had already entered since leaving his starting plot.",
+          "file_name": "5cfb274c-0207-4aa7-9575-6ac0bd95d9b2.xlsx",
+          "file_path": "2023/validation/5cfb274c-0207-4aa7-9575-6ac0bd95d9b2.xlsx",
+          "local_attachment_path": "5cfb274c-0207-4aa7-9575-6ac0bd95d9b2.xlsx"
+        },
+        "dataset_index": 36,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 36
+      }
+    },
+    {
+      "task_id": "9b54f9d9-35ee-4a14-b62f-d130ea00317f",
+      "source_type": "validation_dev",
+      "prompt": "Which of the text elements under CATEGORIES in the XML would contain the one food in the spreadsheet that does not appear a second time under a different name?",
+      "choices": [],
+      "gold_answer": "Soups and Stews",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/9b54f9d9-35ee-4a14-b62f-d130ea00317f",
+      "file_list": [
+        "9b54f9d9-35ee-4a14-b62f-d130ea00317f.zip",
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 3,
+        "file_name": "9b54f9d9-35ee-4a14-b62f-d130ea00317f.zip",
+        "file_path": "2023/validation/9b54f9d9-35ee-4a14-b62f-d130ea00317f.zip",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "9b54f9d9-35ee-4a14-b62f-d130ea00317f",
+          "split": "validation",
+          "level": 3,
+          "question": "Which of the text elements under CATEGORIES in the XML would contain the one food in the spreadsheet that does not appear a second time under a different name?",
+          "file_name": "9b54f9d9-35ee-4a14-b62f-d130ea00317f.zip",
+          "file_path": "2023/validation/9b54f9d9-35ee-4a14-b62f-d130ea00317f.zip",
+          "local_attachment_path": "9b54f9d9-35ee-4a14-b62f-d130ea00317f.zip"
+        },
+        "dataset_index": 37,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 37
+      }
+    },
+    {
+      "task_id": "e8cb5b03-41e0-4086-99e5-f6806cd97211",
+      "source_type": "validation_dev",
+      "prompt": "I went to Virtue restaurant & bar in Chicago for my birthday on March 22, 2021 and the main course I had was delicious!  Unfortunately, when I went back about a month later on April 21, it was no longer on the dinner menu.  Using the Wayback Machine, can you help me figure out which main course was on the dinner menu for Virtue on March 22, 2021 but not April 21, 2021? Answer using the singular form, without articles.",
+      "choices": [],
+      "gold_answer": "shrimp",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/e8cb5b03-41e0-4086-99e5-f6806cd97211",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 2,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "e8cb5b03-41e0-4086-99e5-f6806cd97211",
+          "split": "validation",
+          "level": 2,
+          "question": "I went to Virtue restaurant & bar in Chicago for my birthday on March 22, 2021 and the main course I had was delicious!  Unfortunately, when I went back about a month later on April 21, it was no longer on the dinner menu.  Using the Wayback Machine, can you help me figure out which main course was on the dinner menu for Virtue on March 22, 2021 but not April 21, 2021? Answer using the singular form, without articles.",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 38,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 38
+      }
+    },
+    {
+      "task_id": "27d5d136-8563-469e-92bf-fd103c28b57c",
+      "source_type": "validation_dev",
+      "prompt": "¬(A ∧ B) ↔ (¬A ∨ ¬B)\n¬(A ∨ B) ↔ (¬A ∧ ¬B)\n(A → B) ↔ (¬B → ¬A)\n(A → B) ↔ (¬A ∨ B)\n(¬A → B) ↔ (A ∨ ¬B)\n¬(A → B) ↔ (A ∧ ¬B)\n\nWhich of the above is not logically equivalent to the rest? Provide the full statement that doesn't fit.",
+      "choices": [],
+      "gold_answer": "(¬A → B) ↔ (A ∨ ¬B)",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/27d5d136-8563-469e-92bf-fd103c28b57c",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 1,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "27d5d136-8563-469e-92bf-fd103c28b57c",
+          "split": "validation",
+          "level": 1,
+          "question": "¬(A ∧ B) ↔ (¬A ∨ ¬B)\n¬(A ∨ B) ↔ (¬A ∧ ¬B)\n(A → B) ↔ (¬B → ¬A)\n(A → B) ↔ (¬A ∨ B)\n(¬A → B) ↔ (A ∨ ¬B)\n¬(A → B) ↔ (A ∧ ¬B)\n\nWhich of the above is not logically equivalent to the rest? Provide the full statement that doesn't fit.",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 39,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 39
+      }
+    },
+    {
+      "task_id": "dc28cf18-6431-458b-83ef-64b3ce566c10",
+      "source_type": "validation_dev",
+      "prompt": "My family reunion is this week, and I was assigned the mashed potatoes to bring. The attendees include my married mother and father, my twin brother and his family, my aunt and her family, my grandma and her brother, her brother's daughter, and his daughter's family. All the adults but me have been married, and no one is divorced or remarried, but my grandpa and my grandma's sister-in-law passed away last year. All living spouses are attending. My brother has two children that are still kids, my aunt has one six-year-old, and my grandma's brother's daughter has three kids under 12. I figure each adult will eat about 1.5 potatoes of mashed potatoes and each kid will eat about 1/2 a potato of mashed potatoes, except my second cousins don't eat carbs. The average potato is about half a pound, and potatoes are sold in 5-pound bags. How many whole bags of potatoes do I need? Just give the number.",
+      "choices": [],
+      "gold_answer": "2",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/dc28cf18-6431-458b-83ef-64b3ce566c10",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 1,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "dc28cf18-6431-458b-83ef-64b3ce566c10",
+          "split": "validation",
+          "level": 1,
+          "question": "My family reunion is this week, and I was assigned the mashed potatoes to bring. The attendees include my married mother and father, my twin brother and his family, my aunt and her family, my grandma and her brother, her brother's daughter, and his daughter's family. All the adults but me have been married, and no one is divorced or remarried, but my grandpa and my grandma's sister-in-law passed away last year. All living spouses are attending. My brother has two children that are still kids, my aunt has one six-year-old, and my grandma's brother's daughter has three kids under 12. I figure each adult will eat about 1.5 potatoes of mashed potatoes and each kid will eat about 1/2 a potato of mashed potatoes, except my second cousins don't eat carbs. The average potato is about half a pound, and potatoes are sold in 5-pound bags. How many whole bags of potatoes do I need? Just give the number.",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 40,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 40
+      }
+    },
+    {
+      "task_id": "b816bfce-3d80-4913-a07d-69b752ce6377",
+      "source_type": "validation_dev",
+      "prompt": "In Emily Midkiff's June 2014 article in a journal named for the one of Hreidmar's sons that guarded his house, what word was quoted from two different authors in distaste for the nature of dragon depictions?",
+      "choices": [],
+      "gold_answer": "fluffy",
+      "data_dir": "/data/xsy/project_gaia_skillrl/data/working/tasks/validation/b816bfce-3d80-4913-a07d-69b752ce6377",
+      "file_list": [
+        "task.json"
+      ],
+      "gold_tool_names": [],
+      "gold_trajectory": [],
+      "metadata": {
+        "split": "validation_dev",
+        "level": 1,
+        "file_name": "",
+        "file_path": "",
+        "repo_id": "gaia-benchmark/GAIA",
+        "materialized_task_manifest": {
+          "task_id": "b816bfce-3d80-4913-a07d-69b752ce6377",
+          "split": "validation",
+          "level": 1,
+          "question": "In Emily Midkiff's June 2014 article in a journal named for the one of Hreidmar's sons that guarded his house, what word was quoted from two different authors in distaste for the nature of dragon depictions?",
+          "file_name": "",
+          "file_path": ""
+        },
+        "dataset_index": 41,
+        "original_split": "validation",
+        "holdout_role": "dev",
+        "holdout_split_strategy": "stratified_by_level_preserve_original_order_ceil_to_dev",
+        "holdout_original_index": 41
+      }
+    }
+  ]
+}

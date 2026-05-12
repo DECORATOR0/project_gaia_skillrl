@@ -2,17 +2,23 @@
   "provider": "serper",
   "fallback_provider": "ddg",
   "serper_api_keys": [
-    "08de037f94c9fa98063265172a969858af7770be",
-    "b1cdd501cb471ef3dda72000a3f8557c331a03fb",
     "ede75540f491d40f5387d46b25d0033da531a51d",
     "02ad45413e03b85c1611cb91c97a1dca3a9853ed",
     "5c78eccb4c18e6ff59c7a91048606219de19269f",
+    "c9c4805ff31b8b83b533d2dbe215f99bef32583d",
+    "9f1bde1af5fa6f89b262979f5495d0b757b18a02",
     "0a6e5b8acf8a08ffe813db80d9ce542ead1cebb9",
-    "b979b9a608abd82d97470cc0cbe984d1c3bea776"
+    "b979b9a608abd82d97470cc0cbe984d1c3bea776",
+    "47b1c1c6dec5511dfbf0acaa38060173caa7ae2e",
+    "d7c30c56e9e5007ec34ba6448d8bd16ebc7c15fa",
+    "cc6ff765934e3a77d294a3908e4fd3614fb76e89",
+    "3393da60d22cd49889b80c502052bc4cf1022532"
   ],
-  "serper_api_key": "08de037f94c9fa98063265172a969858af7770be",
+  "serper_api_key": "ede75540f491d40f5387d46b25d0033da531a51d",
   "serper_backup_api_keys": [],
   "serper_exhausted_api_keys": [
+    "08de037f94c9fa98063265172a969858af7770be",
+    "b1cdd501cb471ef3dda72000a3f8557c331a03fb",
     "5f9bb989905278b270da9d6bdd4b31f47365af47",
     "675cce60e52c2d4a11b5e569f1192128fbc5a8da",
     "f252a3b47c3a84a7431add7f8ef6f1a2bcf00d77",
@@ -34,7 +40,7 @@
   "no_proxy": "127.0.0.1,localhost",
   "clear_all_proxy": true,
   "serper_credit_policy": "Each Serper API key has a one-time total credit allocation of 2500, not a monthly reset. Keys are dedicated/exclusive.",
-  "latest_account_check": "2026-05-09 22:17 +0800 via http://127.0.0.1:17890: b1cdd501cb471ef3dda72000a3f8557c331a03fb HTTP 200 balance=2500 rateLimit=5; ede75540f491d40f5387d46b25d0033da531a51d HTTP 200 balance=2500 rateLimit=5; 02ad45413e03b85c1611cb91c97a1dca3a9853ed HTTP 200 balance=2500 rateLimit=5. Active positive balance after update is about 13020 using prior 2026-05-09 21:15 balances for existing active keys.",
-  "verified_at": "2026-05-09 22:17 +0800",
+  "latest_account_check": "2026-05-12 00:15 +0800: appended cc6ff765934e3a77d294a3908e4fd3614fb76e89 and 3393da60d22cd49889b80c502052bc4cf1022532, each documented by provider note as dedicated/exclusive with one-time total quota 2500, not monthly reset. Previous verified balances from 2026-05-10 23:49 +0800 remain in run notes: c9c4805ff31b8b83b533d2dbe215f99bef32583d balance=2500; 9f1bde1af5fa6f89b262979f5495d0b757b18a02 balance=2500; ede75540f491d40f5387d46b25d0033da531a51d balance=2049; 02ad45413e03b85c1611cb91c97a1dca3a9853ed balance=2500; 5c78eccb4c18e6ff59c7a91048606219de19269f balance=2499; 0a6e5b8acf8a08ffe813db80d9ce542ead1cebb9 balance=406; b979b9a608abd82d97470cc0cbe984d1c3bea776 balance=115.",
+  "verified_at": "2026-05-12 00:15 +0800",
   "notes": "Default GAIA search runtime. Change this file when Serper keys or proxy ports rotate. serper_api_keys are ordered by priority and build_search_runtime_env exports the first key as NLRL_SERPER_API_KEY. Current balance details live in latest_account_check; account checks are non-billable."
 }
