@@ -21,6 +21,9 @@
 - GAIA bootstrap/skill 实验启动后尽早检查产物是否正常生成：确认 `bootstrap_input.json`、bootstrap request/response、`skill_after_bootstrap/.../SKILL.md` 是否存在且可读，抽查 metadata version、phase 数量、关键字段、no-CONCLUDE 约束和早期 run log；skill 尚未生成时，要明确报告仍在等待的 actor 或阶段。
 - GAIA eval 进程如果 executor 是远端 vLLM 或通过本地 tunnel 访问远端 endpoint（例如 `127.0.0.1:181xx` -> remote132），本地 eval 子进程默认设置 `CUDA_VISIBLE_DEVICES=`，避免 `onnxruntime-gpu`、`faster_whisper/ctranslate2` 等工具依赖在 254 GPU0 初始化 CUDA 并占用几百 MiB 显存。只有本地进程本身负责 254 上的 vLLM/GPU 推理时，才显式设置 `CUDA_VISIBLE_DEVICES=0/1/...`。
 - 上述 CPU-only 本地 eval 设置不影响远端 executor 性能；潜在影响只在本地工具 fallback：音频转写等本地 GPU 工具会走 CPU 或 API fallback。GAIA remote executor 队列默认优先保护 254 显存。
+- 区分外部中转 API 与自托管 remote132 vLLM：外部 API 不假设无限并发，SSSAI/Responses-SSE 先用低并发验收并观察 `服务器错误`、read timeout、capacity 等信号；自托管 remote132 可以让客户端提交多实验，但必须在队列/服务端侧做 per-lane 背压，限制每个 GPU endpoint 的并发、等待队列和超时，避免只是把卡顿从本地线程挪到远端请求队列。
+- 若把实验主体迁到 remote132 执行，按“远端 runner + 本地只同步结果”处理，不再使用 254 本地 evaluator 通过 SSH tunnel 循环调用远端模型的旧模式；启动前确认代码/数据/venv/搜索代理/API key/结果 rsync 路径/监控日志是否齐全。
+- GAIA 队列默认显式确认单题 wall-time 与工具子进程 wall-time cap；遇到 `tool_snippet.py` 或类似 runaway 子进程时，只释放该题并让 executor 继续收尾，不阻塞整批 dev/test 队列。
 - 新开 GAIA 实验队列时，若有明确需要后续验收的 run、日志、PID 或配置组合，同步更新 `/data/xsy/project_gaia_skillrl/实验设计与迭代/ZZ_当前待验收事项与版本索引.md`。
 - prompt、flow、role、executor、runtime 版本轴发生变化时，同步更新 `/data/xsy/project_gaia_skillrl/实验设计与迭代/ZZ_版本技能图草案.md`；普通数据切片、并发、GPU 分配只写 run 记录。
 - 明显失败、中途异常、样本量很小的实验先放在待验收或问题记录里，验收后再进入版本技能图的已跑组合索引。
