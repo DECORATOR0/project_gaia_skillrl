@@ -14,17 +14,20 @@ sys.path.insert(0, str(SCRIPT_DIR))
 import run_gaia_8b_baseline_254_gpu01_20260507 as base  # noqa: E402
 
 
+GPU_OFFSET = int(os.environ.get("GAIA_8B_REMOTE132_GPU_OFFSET", "0"))
+BASE_PORT = int(os.environ.get("GAIA_8B_REMOTE132_BASE_PORT", "8128"))
+GPU_LABEL = "".join(str(GPU_OFFSET + index) for index in range(4))
 RUN_PREFIX = os.environ.get("GAIA_8B_REMOTE132_PREFIX", "").strip() or datetime.now().strftime(
-    "%Y%m%d_%H%M%S_8b_remote132_baseline_c20_c40_gpus0123"
+    f"%Y%m%d_%H%M%S_8b_remote132_baseline_c20_c40_gpus{GPU_LABEL}"
 )
 MASTER_NAME = f"{RUN_PREFIX}_master"
 SUMMARY_PATH = base.QUEUE_LOG_ROOT / f"{MASTER_NAME}_summary.json"
 
 LANES = [
-    base.Lane("132_gpu0_8b_c20_dev", 0, 8128),
-    base.Lane("132_gpu1_8b_c20_test", 1, 8129),
-    base.Lane("132_gpu2_8b_c40_dev", 2, 8130),
-    base.Lane("132_gpu3_8b_c40_test", 3, 8131),
+    base.Lane(f"132_gpu{GPU_OFFSET}_8b_c20_dev", GPU_OFFSET, BASE_PORT),
+    base.Lane(f"132_gpu{GPU_OFFSET + 1}_8b_c20_test", GPU_OFFSET + 1, BASE_PORT + 1),
+    base.Lane(f"132_gpu{GPU_OFFSET + 2}_8b_c40_dev", GPU_OFFSET + 2, BASE_PORT + 2),
+    base.Lane(f"132_gpu{GPU_OFFSET + 3}_8b_c40_test", GPU_OFFSET + 3, BASE_PORT + 3),
 ]
 
 JOBS = [
@@ -41,7 +44,7 @@ def configure_base() -> None:
     base.MASTER_NAME = MASTER_NAME
     base.SUMMARY_PATH = SUMMARY_PATH
     base.LANES = LANES
-    base.CONFLICTING_VLLM_PORTS = [8128, 8129, 8130, 8131]
+    base.CONFLICTING_VLLM_PORTS = [BASE_PORT + index for index in range(4)]
     base.VLLM_MAX_NUM_SEQS = os.environ.get(
         "GAIA_8B_REMOTE132_VLLM_MAX_NUM_SEQS",
         os.environ.get("GAIA_8B_BASELINE_VLLM_MAX_NUM_SEQS", "48"),
@@ -82,6 +85,8 @@ def write_summary(status: str, **extra: object) -> None:
             "enable_thinking": True,
             "max_executor_steps": 24,
             "task_concurrency_by_job": {str(job["key"]): int(job["concurrency"]) for job in JOBS},
+            "gpu_offset": GPU_OFFSET,
+            "base_port": BASE_PORT,
             "vllm_gpu_memory_utilization": base.VLLM_GPU_MEMORY_UTILIZATION,
             "vllm_max_num_seqs": base.VLLM_MAX_NUM_SEQS,
             "tool_profile": "atomic_v2",
@@ -113,7 +118,12 @@ def main() -> int:
         run_dir="(8B remote132 four-lane baseline c20/c40 master)",
         command=base.command_display(os.environ, [str(base.PYTHON), *sys.argv]),
         log_path=master_log,
-        notes=f"8B remote132 baseline master; GPU0 dev c20, GPU1 test c20, GPU2 dev c40, GPU3 test c40; summary={SUMMARY_PATH}.",
+        notes=(
+            "8B remote132 baseline master; "
+            f"GPU{GPU_OFFSET} dev c20, GPU{GPU_OFFSET + 1} test c20, "
+            f"GPU{GPU_OFFSET + 2} dev c40, GPU{GPU_OFFSET + 3} test c40; "
+            f"summary={SUMMARY_PATH}."
+        ),
     )
     status = "finished"
     write_summary("starting")
