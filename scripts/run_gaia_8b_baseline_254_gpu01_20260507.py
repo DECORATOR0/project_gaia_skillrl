@@ -16,7 +16,14 @@ from urllib.request import Request, urlopen
 
 ROOT = Path("/data/xsy/project_gaia_skillrl")
 PYTHON = ROOT / ".venv/bin/python"
-VLLM_PYTHON = Path("/data/xsy/miniconda3/envs/vllm_budget/bin/python")
+VLLM_PYTHON_CANDIDATES = [
+    Path("/data/xsy/miniconda3/envs/vllm_budget/bin/python"),
+    Path("/data/xsy/miniconda3/envs/env_vllm_qwen35/bin/python"),
+]
+VLLM_PYTHON = Path(
+    os.environ.get("GAIA_8B_BASELINE_VLLM_PYTHON", "").strip()
+    or next((str(path) for path in VLLM_PYTHON_CANDIDATES if path.exists()), str(VLLM_PYTHON_CANDIDATES[0]))
+)
 CONFIG = ROOT / "configs/system.json"
 SEARCH_RUNTIME_CONFIG = ROOT / "configs/search_runtime.json"
 DEV_DATASET = ROOT / "data/converted/gaia_2023_all_validation_dev_tasks.json"
@@ -26,8 +33,9 @@ LAUNCH_LOG_ROOT = RUN_ROOT / "_launch_logs"
 QUEUE_LOG_ROOT = RUN_ROOT / "_queue_logs"
 PROCESS_CSV = Path("/data/xsy/活的进程.csv")
 
+HOST_TAG = os.environ.get("GAIA_8B_BASELINE_HOST_TAG", "254").strip() or "254"
 RUN_PREFIX = os.environ.get("GAIA_8B_BASELINE_PREFIX", "").strip() or datetime.now().strftime(
-    "%Y%m%d_%H%M%S_8b_baseline_254_gpu01"
+    f"%Y%m%d_%H%M%S_8b_baseline_{HOST_TAG}_gpu01"
 )
 MASTER_NAME = f"{RUN_PREFIX}_master"
 SUMMARY_PATH = QUEUE_LOG_ROOT / f"{MASTER_NAME}_summary.json"
@@ -60,8 +68,8 @@ class Lane:
 
 
 LANES = [
-    Lane("254_gpu0_8b", 0, 8128),
-    Lane("254_gpu1_8b", 1, 8129),
+    Lane(f"{HOST_TAG}_gpu0_8b", 0, 8128),
+    Lane(f"{HOST_TAG}_gpu1_8b", 1, 8129),
 ]
 
 
@@ -346,7 +354,7 @@ def start_or_reuse_vllm(lane: Lane) -> int | None:
         command=shell_join(["env", f"CUDA_VISIBLE_DEVICES={lane.gpu}", "PYTHONUNBUFFERED=1", *cmd]),
         log_path=log_path,
         notes=(
-            f"254 local Qwen3-8B baseline vLLM; lane={lane.name}; "
+            f"local Qwen3-8B baseline vLLM; lane={lane.name}; "
             f"max_model_len={lane.max_model_len}; "
             f"gpu_memory_utilization={VLLM_GPU_MEMORY_UTILIZATION}; max_num_seqs={VLLM_MAX_NUM_SEQS}."
         ),
@@ -446,8 +454,10 @@ def common_env(lane: Lane) -> dict[str, str]:
 def selected_env(env: dict[str, str]) -> dict[str, str]:
     keys = [
         "GAIA_8B_BASELINE_PREFIX",
+        "GAIA_8B_BASELINE_HOST_TAG",
         "GAIA_8B_BASELINE_CONCURRENCY",
         "GAIA_8B_BASELINE_CODEX_TIMEOUT_SECONDS",
+        "GAIA_8B_BASELINE_VLLM_PYTHON",
         "GAIA_8B_BASELINE_STOP_CONFLICTING_SERVICES",
         "GAIA_8B_BASELINE_VLLM_GPU_MEMORY_UTILIZATION",
         "GAIA_8B_BASELINE_VLLM_MAX_NUM_SEQS",
@@ -584,10 +594,10 @@ def main() -> int:
         name=MASTER_NAME,
         pid=os.getpid(),
         cwd=ROOT,
-        run_dir="(8B direct baseline 254 GPU0/GPU1 master)",
+        run_dir=f"(8B direct baseline {HOST_TAG} GPU0/GPU1 master)",
         command=command_display(os.environ, [str(PYTHON), *sys.argv]),
         log_path=master_log,
-        notes=f"8B direct baseline master; dev on GPU0, test on GPU1; summary={SUMMARY_PATH}.",
+        notes=f"8B direct baseline master on {HOST_TAG}; dev on GPU0, test on GPU1; summary={SUMMARY_PATH}.",
     )
     status = "finished"
     write_summary("starting")
