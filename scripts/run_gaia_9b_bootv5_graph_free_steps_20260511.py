@@ -46,6 +46,8 @@ POLL_SECONDS = int(os.environ.get("GAIA_BOOTV5_GRAPH_FREE_STEPS_POLL_SECONDS", "
 CODEX_TIMEOUT_SECONDS = int(os.environ.get("GAIA_BOOTV5_GRAPH_FREE_STEPS_CODEX_TIMEOUT_SECONDS", "3600"))
 PREPROCESS_NOTE_CHAR_CAP = os.environ.get("GAIA_BOOTV5_GRAPH_FREE_STEPS_PREPROCESS_NOTE_CHAR_CAP", "700")
 LONGTAIL_FRACTION = float(os.environ.get("GAIA_BOOTV5_GRAPH_FREE_STEPS_LONGTAIL_FRACTION", "0.95"))
+LONGTAIL_MAX_MISSING = int(os.environ.get("GAIA_BOOTV5_GRAPH_FREE_STEPS_LONGTAIL_MAX_MISSING", "2"))
+LONGTAIL_STALLED_SECONDS = int(os.environ.get("GAIA_BOOTV5_GRAPH_FREE_STEPS_LONGTAIL_STALLED_SECONDS", "900"))
 V5_STEPS = [24, 48]
 FOLLOWUP_STEP = 48
 
@@ -63,6 +65,7 @@ os.environ.setdefault("GAIA_REMAIN20_CRITIC_SHARD_CONCURRENCY", "99")
 os.environ.setdefault("GAIA_SEARCH_RUNTIME_CONFIG", str(SEARCH_RUNTIME_CONFIG))
 
 sys.path.insert(0, str(SCRIPTS))
+import gaia_queue_guard as queue_guard  # noqa: E402
 import run_gaia_9b_bootv4_b3_continue254_20260508 as prev  # noqa: E402
 
 
@@ -174,17 +177,8 @@ def state_count(run_name: str) -> tuple[int, int, float]:
     run_dir = latest_run_dir(run_name)
     if run_dir is None:
         return 0, 0, 0.0
-    selected = run_dir / "selected_tasks.json"
-    total = 0
-    if selected.exists():
-        try:
-            total = len(json.loads(selected.read_text(encoding="utf-8")).get("task_ids", []))
-        except Exception:
-            total = 0
-    iteration = latest_iteration_dir(run_dir)
-    states = list(iteration.glob("*/state.json")) if iteration else []
-    last_mtime = max((path.stat().st_mtime for path in states), default=0.0)
-    return len(states), total, last_mtime
+    progress = queue_guard.state_progress(run_dir)
+    return progress.landed, progress.total, progress.last_state_mtime
 
 
 def bootstrap_skill_path(run_name: str) -> Path | None:
@@ -253,19 +247,22 @@ def predecessor_progress(row: dict[str, str]) -> dict[str, Any]:
     name = row.get("name", "")
     pid_text = row.get("pid", "").strip()
     live = pid_text.isdigit() and pid_alive(int(pid_text))
-    done, total, last_mtime = state_count(name)
-    threshold = int(total * LONGTAIL_FRACTION + 0.999) if total else 0
-    ready = (not live) or (bool(total) and done >= threshold)
-    return {
+    progress = queue_guard.state_progress(latest_run_dir(name))
+    payload = queue_guard.progress_payload(
+        name,
+        progress,
+        live=live,
+        fraction=LONGTAIL_FRACTION,
+        max_missing=LONGTAIL_MAX_MISSING,
+        stalled_seconds=LONGTAIL_STALLED_SECONDS,
+    )
+    payload.update({
         "name": name,
         "pid": pid_text,
-        "live": live,
-        "done": done,
-        "total": total,
-        "threshold": threshold,
-        "last_state_at": datetime.fromtimestamp(last_mtime).astimezone().isoformat(timespec="seconds") if last_mtime else "",
-        "ready": ready,
-    }
+        "done": progress.landed,
+        "ready": payload["longtail_ready"],
+    })
+    return payload
 
 
 def wait_predecessor_longtail() -> None:
@@ -456,19 +453,22 @@ def poll_launched() -> None:
 
 
 def item_progress(item: LaunchedEval) -> dict[str, Any]:
-    done, total, last_mtime = state_count(item.run_name)
-    threshold = int(total * LONGTAIL_FRACTION + 0.999) if total else 0
     live = item.returncode is None and item.process.poll() is None
-    return {
-        "label": item.label,
+    progress = queue_guard.state_progress(latest_run_dir(item.run_name))
+    payload = queue_guard.progress_payload(
+        item.label,
+        progress,
+        live=live,
+        fraction=LONGTAIL_FRACTION,
+        max_missing=LONGTAIL_MAX_MISSING,
+        stalled_seconds=LONGTAIL_STALLED_SECONDS,
+    )
+    payload.update({
         "run_name": item.run_name,
-        "live": live,
-        "done": done,
-        "total": total,
-        "threshold": threshold,
-        "longtail": (not live) or (bool(total) and done >= threshold),
-        "last_state_at": datetime.fromtimestamp(last_mtime).astimezone().isoformat(timespec="seconds") if last_mtime else "",
-    }
+        "done": progress.landed,
+        "longtail": payload["longtail_ready"],
+    })
+    return payload
 
 
 def item_blocks_lane(item: LaunchedEval) -> bool:
@@ -851,11 +851,20 @@ def run_v5_a_followups(v5_boot_records: list[dict[str, Any]]) -> None:
 def wait_all_evals_done() -> None:
     while True:
         poll_launched()
-        live = [label for label, item in launched.items() if item.returncode is None]
-        write_manifest("running", {"stage": "final_wait_all_evals", "live": live})
-        if not live:
+        progress = [
+            item_progress(item)
+            for item in launched.values()
+            if item.returncode is None
+        ]
+        live = [item["label"] for item in progress if item["live"]]
+        blocking = [item["label"] for item in progress if item["live"] and not item["longtail"]]
+        write_manifest(
+            "running",
+            {"stage": "final_wait_tail_or_done", "live": live, "blocking": blocking, "progress": progress},
+        )
+        if not blocking:
             return
-        log(f"final wait all evals; live={live}")
+        log(f"final wait tail-or-done; blocking={blocking}")
         time.sleep(POLL_SECONDS)
 
 
@@ -902,8 +911,18 @@ def main() -> int:
         run_v5_a_followups(v5_boot_records)
         wait_all_evals_done()
         failed = {label: item.returncode for label, item in launched.items() if item.returncode not in {0, None}}
-        status = "finished_with_eval_failures" if failed else "finished"
-        write_manifest(status, {"started_at": start, "ended_at": now(), "failed": failed})
+        live_longtail = {
+            label: item_progress(item)
+            for label, item in launched.items()
+            if item.returncode is None and item_progress(item)["longtail"]
+        }
+        if failed:
+            status = "finished_with_eval_failures"
+        elif live_longtail:
+            status = "finished_with_longtail_live"
+        else:
+            status = "finished"
+        write_manifest(status, {"started_at": start, "ended_at": now(), "failed": failed, "released_after_longtail": live_longtail})
         write_summary(status)
         return 0 if not failed else 1
     except KeyboardInterrupt:

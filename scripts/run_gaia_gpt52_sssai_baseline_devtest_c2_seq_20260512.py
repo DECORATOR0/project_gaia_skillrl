@@ -59,6 +59,8 @@ def selected_env(env: dict[str, str]) -> dict[str, str]:
         "GAIA_GPT52_SSSAI_BASELINE_CONCURRENCY",
         "GAIA_GPT52_SSSAI_BASELINE_CONFIRMATION_DOC",
         "GAIA_GPT52_SSSAI_BASELINE_SCHEDULE",
+        "GAIA_GPT52_SSSAI_REASONING_EFFORT",
+        "GAIA_GPT52_SSSAI_MAX_OUTPUT_TOKENS",
     ]:
         if env.get(key) is not None:
             selected[key] = env[key]
@@ -92,9 +94,8 @@ def write_summary(status: str, **extra: Any) -> None:
             "executor_base_url": runner.SSSAI_BASE_URL,
             "executor_api_mode": "responses_sse",
             "executor_stream": True,
-            "executor_enable_thinking": True,
-            "executor_reasoning_effort": "xhigh",
-            "executor_max_output_tokens": 12288,
+            "executor_reasoning_effort": runner.SSSAI_REASONING_EFFORT or None,
+            "executor_max_output_tokens": runner.executor_max_output_tokens_value(),
             "executor_temperature": 0.1,
             "executor_timeout_seconds": 1200,
             "context_policy": "provider-native responses_sse; no local tokenizer token guard",
@@ -138,8 +139,8 @@ def append_final_report(status: str, stats: dict[str, dict[str, Any]], eval_pids
         f"- prefix：`{runner.RUN_PREFIX}`",
         f"- master：`{runner.MASTER_NAME}`，summary `{runner.SUMMARY_PATH}`",
         f"- eval PIDs：dev `{eval_pids.get('dev')}`，test `{eval_pids.get('test')}`",
-        "- executor：`gpt-5.2` via SSSAI Responses SSE，`stream=True`，`reasoning_effort=xhigh`，`max_output_tokens=12288`。",
-        "- 调度：顺序 dev -> test；总 SSSAI API 并发上限为 `2`。",
+        f"- executor：{runner.executor_config_text()}。",
+        f"- 调度：顺序 dev -> test；总 SSSAI API 并发上限为 `{runner.CONCURRENCY}`。",
         "",
         "| label | score | landed | missing | avg_steps | web_calls | run_dir |",
         "|---|---:|---:|---:|---:|---:|---|",

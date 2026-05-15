@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="620" viewBox="0 0 980 620">
+  <style>
+    .bg { fill: #ffffff; }
+    .edge { stroke: #9aa4b2; stroke-width: 1.35; opacity: 0.48; }
+    .initEdge { stroke: #2563eb; stroke-width: 2.2; opacity: 0.82; marker-end: url(#arrowBlue); }
+    .node { fill: #f8fafc; stroke: #334155; stroke-width: 2; }
+    .init { fill: #dbeafe; stroke: #1d4ed8; stroke-width: 2.5; }
+    .label { font-family: Arial, sans-serif; font-size: 15px; fill: #0f172a; text-anchor: middle; dominant-baseline: middle; }
+    .small { font-family: Arial, sans-serif; font-size: 12px; fill: #475569; text-anchor: middle; }
+    .title { font-family: Arial, sans-serif; font-size: 22px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+  </style>
+  <defs>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#2563eb"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="980" height="620"/>
+  <text class="title" x="490" y="36">fixed BOOTV7 r1 pseudo-complete graph</text>
+  <text class="small" x="490" y="58">INIT one-way routes into every work phase; six work phases form a complete directed graph without self-loops.</text>
+
+  <!-- Work-phase complete graph, drawn as undirected visual abstraction for readability. -->
+  <line class="edge" x1="490" y1="105" x2="688" y2="202"/>
+  <line class="edge" x1="490" y1="105" x2="688" y2="418"/>
+  <line class="edge" x1="490" y1="105" x2="490" y2="515"/>
+  <line class="edge" x1="490" y1="105" x2="292" y2="418"/>
+  <line class="edge" x1="490" y1="105" x2="292" y2="202"/>
+  <line class="edge" x1="688" y1="202" x2="688" y2="418"/>
+  <line class="edge" x1="688" y1="202" x2="490" y2="515"/>
+  <line class="edge" x1="688" y1="202" x2="292" y2="418"/>
+  <line class="edge" x1="688" y1="202" x2="292" y2="202"/>
+  <line class="edge" x1="688" y1="418" x2="490" y2="515"/>
+  <line class="edge" x1="688" y1="418" x2="292" y2="418"/>
+  <line class="edge" x1="688" y1="418" x2="292" y2="202"/>
+  <line class="edge" x1="490" y1="515" x2="292" y2="418"/>
+  <line class="edge" x1="490" y1="515" x2="292" y2="202"/>
+  <line class="edge" x1="292" y1="418" x2="292" y2="202"/>
+
+  <!-- INIT routes. -->
+  <line class="initEdge" x1="490" y1="310" x2="490" y2="140"/>
+  <line class="initEdge" x1="515" y1="297" x2="656" y2="224"/>
+  <line class="initEdge" x1="515" y1="323" x2="656" y2="396"/>
+  <line class="initEdge" x1="490" y1="338" x2="490" y2="480"/>
+  <line class="initEdge" x1="465" y1="323" x2="324" y2="396"/>
+  <line class="initEdge" x1="465" y1="297" x2="324" y2="224"/>
+
+  <circle class="node" cx="490" cy="105" r="56"/>
+  <text class="label" x="490" y="100">LOCAL</text>
+  <text class="label" x="490" y="118">EVIDENCE</text>
+
+  <circle class="node" cx="688" cy="202" r="56"/>
+  <text class="label" x="688" y="197">WEB</text>
+  <text class="label" x="688" y="215">RETRIEVE</text>
+
+  <circle class="node" cx="688" cy="418" r="64"/>
+  <text class="label" x="688" y="407">MULTIMODAL</text>
+  <text class="label" x="688" y="425">EXTRACT</text>
+
+  <circle class="node" cx="490" cy="515" r="56"/>
+  <text class="label" x="490" y="515">COMPUTE</text>
+
+  <circle class="node" cx="292" cy="418" r="56"/>
+  <text class="label" x="292" y="418">VERIFY</text>
+
+  <circle class="node" cx="292" cy="202" r="56"/>
+  <text class="label" x="292" y="202">REPAIR</text>
+
+  <circle class="init" cx="490" cy="310" r="44"/>
+  <text class="label" x="490" y="310">INIT</text>
+
+  <text class="small" x="490" y="590">Visual abstraction: gray lines stand for both directed edges between work phases; blue arrows are INIT outgoing edges.</text>
+</svg>

@@ -858,42 +858,83 @@ class OpenAICompatibleLLM:
             *extra_args,
             "-",
         ]
+        max_attempts = max(1, int(os.environ.get("NLRL_CODEX_CLI_RETRIES", "5")))
+        retry_markers = (
+            "Selected model is at capacity",
+            "stream disconnected",
+            "temporarily unavailable",
+            "rate limit",
+            "overloaded",
+            "HTTP 429",
+            "HTTP 500",
+            "HTTP 502",
+            "HTTP 503",
+            "HTTP 504",
+        )
         started = time.monotonic()
+        attempts: list[dict[str, Any]] = []
         try:
-            completed = subprocess.run(
-                cmd,
-                input=prompt,
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=timeout_seconds,
-                check=False,
-            )
-            elapsed = time.monotonic() - started
-            text = output_path.read_text(encoding="utf-8", errors="replace").strip()
-            if not text:
-                text = completed.stdout.strip()
-            if completed.returncode != 0:
-                raise RuntimeError(
-                    f"codex exec failed with returncode={completed.returncode}\n"
-                    f"stdout:\n{completed.stdout[-4000:]}\n"
-                    f"stderr:\n{completed.stderr[-4000:]}"
+            for attempt in range(1, max_attempts + 1):
+                output_path.write_text("", encoding="utf-8")
+                attempt_started = time.monotonic()
+                completed = subprocess.run(
+                    cmd,
+                    input=prompt,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=timeout_seconds,
+                    check=False,
                 )
-            if not text:
-                raise RuntimeError("codex exec returned empty final message.")
-            return LLMCallResult(
-                text=text,
-                raw_response={
-                    "provider": "codex_cli",
-                    "command": cmd,
-                    "returncode": completed.returncode,
-                    "stdout_tail": completed.stdout[-4000:],
-                    "stderr_tail": completed.stderr[-4000:],
-                    "elapsed_seconds": elapsed,
-                    "output_last_message": str(output_path),
-                },
-                request_payload=request_payload | {"command": cmd},
-            )
+                attempt_elapsed = time.monotonic() - attempt_started
+                text = output_path.read_text(encoding="utf-8", errors="replace").strip()
+                if not text:
+                    text = completed.stdout.strip()
+                combined_tail = (completed.stdout[-4000:] + "\n" + completed.stderr[-4000:]).strip()
+                attempts.append(
+                    {
+                        "attempt": attempt,
+                        "returncode": completed.returncode,
+                        "elapsed_seconds": attempt_elapsed,
+                        "stdout_tail": completed.stdout[-1000:],
+                        "stderr_tail": completed.stderr[-1000:],
+                        "empty_text": not bool(text),
+                    }
+                )
+                retryable = any(marker.lower() in combined_tail.lower() for marker in retry_markers)
+                if completed.returncode == 0 and text:
+                    elapsed = time.monotonic() - started
+                    return LLMCallResult(
+                        text=text,
+                        raw_response={
+                            "provider": "codex_cli",
+                            "command": cmd,
+                            "returncode": completed.returncode,
+                            "stdout_tail": completed.stdout[-4000:],
+                            "stderr_tail": completed.stderr[-4000:],
+                            "elapsed_seconds": elapsed,
+                            "output_last_message": str(output_path),
+                            "attempts": attempts,
+                        },
+                        request_payload=request_payload | {"command": cmd, "attempts": len(attempts)},
+                    )
+                if completed.returncode != 0 and (not retryable or attempt >= max_attempts):
+                    raise RuntimeError(
+                        f"codex exec failed with returncode={completed.returncode} after {attempt} attempts\n"
+                        f"stdout:\n{completed.stdout[-4000:]}\n"
+                        f"stderr:\n{completed.stderr[-4000:]}"
+                    )
+                if completed.returncode == 0 and not text and attempt >= max_attempts:
+                    raise RuntimeError(f"codex exec returned empty final message after {attempt} attempts.")
+                sleep_seconds = min(300.0, 15.0 * attempt + random.uniform(2.0, 8.0))
+                _llm_logger.warning(
+                    "codex exec transient failure; retrying attempt %s/%s in %.1fs",
+                    attempt + 1,
+                    max_attempts,
+                    sleep_seconds,
+                )
+                time.sleep(sleep_seconds)
+            raise RuntimeError("codex exec failed without producing a terminal result.")
         finally:
             try:
                 output_path.unlink()

@@ -38,6 +38,43 @@ SSSAI_API_KEY = os.environ.get(
     "GAIA_GPT52_SSSAI_API_KEY",
     "sk-sssaicode-9d340d3064511a95fb7f428f2356dfc7a08c724271a66aa1bdc72a3b2af85cb4",
 )
+SSSAI_REASONING_EFFORT = (
+    os.environ.get("GAIA_GPT52_SSSAI_REASONING_EFFORT")
+    or os.environ.get("NLRL_EXECUTOR_REASONING_EFFORT")
+    or ""
+).strip()
+SSSAI_MAX_OUTPUT_TOKENS = (
+    os.environ.get("GAIA_GPT52_SSSAI_MAX_OUTPUT_TOKENS")
+    or os.environ.get("NLRL_EXECUTOR_MAX_TOKENS")
+    or "4096"
+).strip()
+if SSSAI_MAX_OUTPUT_TOKENS:
+    int(SSSAI_MAX_OUTPUT_TOKENS)
+
+
+def executor_reasoning_label() -> str:
+    return SSSAI_REASONING_EFFORT or "omitted"
+
+
+def executor_max_output_tokens_value() -> int | None:
+    if not SSSAI_MAX_OUTPUT_TOKENS:
+        return None
+    value = int(SSSAI_MAX_OUTPUT_TOKENS)
+    return value if value > 0 else None
+
+
+def executor_config_text() -> str:
+    parts = [
+        "`gpt-5.2` via SSSAI Responses SSE",
+        "`stream=True`",
+        f"`reasoning_effort={executor_reasoning_label()}`",
+    ]
+    max_output_tokens = executor_max_output_tokens_value()
+    if max_output_tokens is None:
+        parts.append("`max_output_tokens=omitted`")
+    else:
+        parts.append(f"`max_output_tokens={max_output_tokens}`")
+    return "，".join(parts)
 
 
 def now() -> str:
@@ -214,6 +251,12 @@ def common_env() -> dict[str, str]:
         "NLRL_EXECUTOR_TOKEN_GUARD_SAFETY_MARGIN",
         "NLRL_EXECUTOR_THINKING_TOKEN_BUDGET",
         "NLRL_EXECUTOR_THINKING_BUDGET",
+        "NLRL_EXECUTOR_REASONING_EFFORT",
+        "NLRL_EXECUTOR_REASONING",
+        "NLRL_EXECUTOR_MAX_TOKENS",
+        "NLRL_LLM_REASONING_EFFORT",
+        "NLRL_LLM_REASONING",
+        "NLRL_LLM_MAX_TOKENS",
         "NLRL_LLM_THINKING_TOKEN_BUDGET",
         "NLRL_LLM_THINKING_BUDGET",
     ]:
@@ -246,16 +289,18 @@ def common_env() -> dict[str, str]:
             "NLRL_EXECUTOR_API_KEY": SSSAI_API_KEY,
             "NLRL_EXECUTOR_API_MODE": "responses_sse",
             "NLRL_EXECUTOR_STREAM": "1",
-            "NLRL_EXECUTOR_ENABLE_THINKING": "1",
-            "NLRL_EXECUTOR_REASONING_EFFORT": "xhigh",
             "NLRL_EXECUTOR_TEMPERATURE": "0.1",
             "NLRL_EXECUTOR_TIMEOUT_SECONDS": "1200",
             "NLRL_LLM_STREAM_WALL_TIMEOUT_SECONDS": "1200",
-            "NLRL_EXECUTOR_MAX_TOKENS": "12288",
             "NLRL_TOOL_BASE_URL": "http://35.220.164.252:3888/v1",
             "NLRL_TOOL_MODEL": "gpt-4o-mini",
         }
     )
+    if SSSAI_REASONING_EFFORT:
+        env["NLRL_EXECUTOR_REASONING_EFFORT"] = SSSAI_REASONING_EFFORT
+    max_output_tokens = executor_max_output_tokens_value()
+    if max_output_tokens is not None:
+        env["NLRL_EXECUTOR_MAX_TOKENS"] = str(max_output_tokens)
     return env
 
 
@@ -281,7 +326,6 @@ def selected_env(env: dict[str, str]) -> dict[str, str]:
         "NLRL_EXECUTOR_API_KEY",
         "NLRL_EXECUTOR_API_MODE",
         "NLRL_EXECUTOR_STREAM",
-        "NLRL_EXECUTOR_ENABLE_THINKING",
         "NLRL_EXECUTOR_REASONING_EFFORT",
         "NLRL_EXECUTOR_TEMPERATURE",
         "NLRL_EXECUTOR_TIMEOUT_SECONDS",
@@ -455,8 +499,8 @@ def write_summary(status: str, **extra: Any) -> None:
             "executor_base_url": SSSAI_BASE_URL,
             "executor_api_mode": "responses_sse",
             "executor_stream": True,
-            "executor_reasoning_effort": "xhigh",
-            "executor_max_output_tokens": 12288,
+            "executor_reasoning_effort": SSSAI_REASONING_EFFORT or None,
+            "executor_max_output_tokens": executor_max_output_tokens_value(),
             "executor_temperature": 0.1,
             "executor_timeout_seconds": 1200,
             "context_policy": "provider-native responses_sse; no local tokenizer token guard",
@@ -481,7 +525,7 @@ def append_final_report(status: str, stats: dict[str, dict[str, Any]], eval_pids
         f"- prefix：`{RUN_PREFIX}`",
         f"- master：`{MASTER_NAME}`，status `{status}`，summary `{SUMMARY_PATH}`",
         f"- eval PIDs：dev `{eval_pids.get('dev')}`，test `{eval_pids.get('test')}`",
-        "- executor：`gpt-5.2` via SSSAI Responses SSE，`stream=True`，`reasoning_effort=xhigh`，`max_output_tokens=12288`。",
+        f"- executor：{executor_config_text()}。",
         "- context：provider-native；本次未使用 8B/9B tokenizer token guard。",
         "",
         "| label | score | landed | missing | avg_steps | web_calls | run_dir |",

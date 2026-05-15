@@ -15,7 +15,9 @@ from pathlib import Path
 
 ROOT = Path("/data/xsy/project_gaia_skillrl")
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
 
+import gaia_queue_guard as queue_guard  # noqa: E402
 from gaia_skillrl.search_config import apply_search_runtime_env, build_search_runtime_env, load_search_runtime_config  # noqa: E402
 
 PYTHON = ROOT / ".venv/bin/python"
@@ -40,6 +42,9 @@ REMOTE_LANES_PER_QUEUE = max(1, int(os.environ.get("GAIA_QWEN35_REMOTE_LANES_PER
 CONCURRENCY = int(os.environ.get("GAIA_QWEN35_QUEUE_CONCURRENCY", "20"))
 POLL_SECONDS = int(os.environ.get("GAIA_QWEN35_MASTER_POLL_SECONDS", "60"))
 SKIP_SMOKE = os.environ.get("GAIA_QWEN35_MASTER_SKIP_SMOKE", "").strip().lower() in {"1", "true", "yes", "on"}
+LONGTAIL_FRACTION = float(os.environ.get("GAIA_QWEN35_MASTER_LONGTAIL_FRACTION", "0.95"))
+LONGTAIL_MAX_MISSING = int(os.environ.get("GAIA_QWEN35_MASTER_LONGTAIL_MAX_MISSING", "2"))
+LONGTAIL_STALLED_SECONDS = int(os.environ.get("GAIA_QWEN35_MASTER_LONGTAIL_STALLED_SECONDS", "900"))
 
 DIRECT_BASELINE_RUN_NAME = f"{STAMP}_qwen35_9b_serper_direct_test82_c{CONCURRENCY}"
 SMOKE_RUN_NAME = f"{STAMP}_qwen35_9b_serper_smoke_direct_max1"
@@ -313,6 +318,32 @@ def smoke_has_content(run_name: str) -> tuple[bool, str]:
     return False, f"empty raw output and final_answer in {states[0]}"
 
 
+def managed_run_progress(item: ManagedProcess, run_name: str) -> dict[str, object]:
+    live = poll_process(item) == "running"
+    progress = queue_guard.state_progress(latest_run_dir(run_name))
+    payload = queue_guard.progress_payload(
+        item.label,
+        progress,
+        live=live,
+        fraction=LONGTAIL_FRACTION,
+        max_missing=LONGTAIL_MAX_MISSING,
+        stalled_seconds=LONGTAIL_STALLED_SECONDS,
+    )
+    payload.update(
+        {
+            "run_name": run_name,
+            "pid": item.pid,
+            "status": item.status,
+        }
+    )
+    return payload
+
+
+def process_blocks_master(item: ManagedProcess, run_name: str) -> bool:
+    progress = managed_run_progress(item, run_name)
+    return bool(progress["live"]) and not bool(progress["longtail_ready"])
+
+
 def spawn_process(
     *,
     label: str,
@@ -506,6 +537,7 @@ def write_status(
     all_processes: list[ManagedProcess],
     pending: list[QueueSpec],
     failures: list[str],
+    progress: list[dict[str, object]] | None = None,
 ) -> None:
     STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
     lines = [
@@ -534,6 +566,14 @@ def write_status(
         lines.append("- none")
     if failures:
         lines.extend(["", "## Failures", *[f"- {item}" for item in failures]])
+    if progress:
+        lines.extend(["", "## Long-Tail Progress"])
+        for item in progress:
+            lines.append(
+                f"- {item['label']}: run=`{item['run_name']}` pid=`{item['pid']}` "
+                f"live=`{item['live']}` longtail_ready=`{item['longtail_ready']}` "
+                f"states=`{item['landed']}/{item['total'] or '?'}` last_state_at=`{item['last_state_at']}`"
+            )
     STATUS_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -599,6 +639,7 @@ def main() -> int:
     active_versions: list[ManagedProcess] = []
     pending = queue_specs()
     failures: list[str] = []
+    baseline_failure_recorded = False
     status = "finished"
     signal.signal(signal.SIGTERM, lambda _signum, _frame: (_ for _ in ()).throw(KeyboardInterrupt))
     try:
@@ -613,7 +654,8 @@ def main() -> int:
         baseline = launch_direct("qwen35_9b_serper_direct_test82_baseline", DIRECT_BASELINE_RUN_NAME, max_tasks=None)
         all_processes.append(baseline)
 
-        while pending or active_versions or pid_alive(baseline.pid):
+        while pending or active_versions or process_blocks_master(baseline, DIRECT_BASELINE_RUN_NAME):
+            baseline_progress = managed_run_progress(baseline, DIRECT_BASELINE_RUN_NAME)
             refresh_process_registry()
             for item in list(active_versions):
                 state = poll_process(item)
@@ -624,10 +666,16 @@ def main() -> int:
                     failures.append(f"{item.label}: returncode={item.returncode}; log={item.log_path}")
                 log(f"version queue exited: {item.label} pid={item.pid}")
 
-            if baseline.status == "running" and poll_process(baseline) != "running":
+            if baseline.status != "running" and not baseline_failure_recorded:
                 if baseline.returncode not in (0, None):
                     failures.append(f"{baseline.label}: returncode={baseline.returncode}; log={baseline.log_path}")
+                baseline_failure_recorded = True
                 log(f"baseline exited: pid={baseline.pid}")
+            elif baseline_progress["live"] and baseline_progress["longtail_ready"]:
+                log(
+                    "baseline reached long-tail; master will not wait for final summary: "
+                    f"{baseline_progress['landed']}/{baseline_progress['total'] or '?'} states"
+                )
 
             while pending and len(active_versions) < MAX_VERSION_QUEUES:
                 spec = pending.pop(0)
@@ -639,12 +687,20 @@ def main() -> int:
                 active_versions.append(launched)
                 all_processes.append(launched)
 
-            write_status("running", all_processes, pending, failures)
-            if pending or active_versions or baseline.status == "running":
+            write_status("running", all_processes, pending, failures, [baseline_progress])
+            if pending or active_versions or process_blocks_master(baseline, DIRECT_BASELINE_RUN_NAME):
                 time.sleep(POLL_SECONDS)
 
-        final_status = "completed_with_failures" if failures else "completed"
-        write_status(final_status, all_processes, pending, failures)
+        baseline_progress = managed_run_progress(baseline, DIRECT_BASELINE_RUN_NAME)
+        if baseline.status != "running" and not baseline_failure_recorded and baseline.returncode not in (0, None):
+            failures.append(f"{baseline.label}: returncode={baseline.returncode}; log={baseline.log_path}")
+        if failures:
+            final_status = "completed_with_failures"
+        elif baseline_progress["live"] and baseline_progress["longtail_ready"]:
+            final_status = "completed_with_longtail_baseline_live"
+        else:
+            final_status = "completed"
+        write_status(final_status, all_processes, pending, failures, [baseline_progress])
         return 0 if not failures else 1
     except KeyboardInterrupt:
         status = "stopped"

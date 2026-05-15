@@ -45,6 +45,12 @@ skill_variants/
 
 # Local task scratch artifacts
 /tmp/
+/*.json
+/*.txt
+/*.srt
+/*.tsv
+/*.vtt
+/*.sqlite
 /*.pdf
 /*.xlsx
 /*.png
@@ -52,4 +58,6 @@ skill_variants/
 /*.jpeg
 /*.mp4
 /*.csv
+/dictionary.txt
 /words_alpha.txt
+/skill-pool/

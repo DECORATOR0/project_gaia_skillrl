@@ -2,16 +2,20 @@ from __future__ import annotations
 
 import base64
 import csv
+import fcntl
+import hashlib
 import io
 import json
 import mimetypes
 import os
 import posixpath
+import random
 import re
 import shutil
 import subprocess
 import tarfile
 import tempfile
+import threading
 import time
 import zipfile
 from dataclasses import dataclass
@@ -247,6 +251,8 @@ class Toolbox:
         self.active_skill_dir: Path | None = None
         self.active_task_data_dir: Path | None = None
         self._whisper_model: Any | None = None
+        self._serper_rejected_keys: set[str] = set()
+        self._serper_rate_locks: dict[str, threading.Lock] = {}
         ensure_dir(context.temp_root)
         self._register_builtin_tools()
 
@@ -1498,7 +1504,11 @@ class Toolbox:
         if single_key:
             keys.insert(0, single_key)
         seen: set[str] = set()
-        return [key for key in keys if not (key in seen or seen.add(key))]
+        keys = [key for key in keys if not (key in seen or seen.add(key))]
+        keys = [key for key in keys if key not in self._serper_rejected_keys]
+        if os.environ.get("NLRL_SERPER_KEY_ORDER", "").strip().lower() not in {"fixed", "ordered"}:
+            random.shuffle(keys)
+        return keys
 
     @staticmethod
     def _is_serper_key_error(response: requests.Response) -> bool:
@@ -1507,9 +1517,71 @@ class Toolbox:
             return True
         if "invalid api key" in body or "invalid x-api-key" in body:
             return True
-        if response.status_code in {401, 403}:
+        if response.status_code in {401, 403, 429}:
             return True
         return False
+
+    def _wait_for_serper_key_slot(self, api_key: str) -> None:
+        enabled = os.environ.get("NLRL_SERPER_RATE_LIMIT_ENABLED", "1").strip().lower()
+        if enabled in {"0", "false", "no", "off"}:
+            return
+        try:
+            limit = int(os.environ.get("NLRL_SERPER_KEY_RATE_LIMIT_PER_SECOND", "").strip() or "5")
+        except ValueError:
+            limit = 5
+        if limit <= 0:
+            return
+        try:
+            window_seconds = float(os.environ.get("NLRL_SERPER_RATE_LIMIT_WINDOW_SECONDS", "").strip() or "1.0")
+        except ValueError:
+            window_seconds = 1.0
+        window_seconds = max(0.1, window_seconds)
+        try:
+            max_wait_seconds = float(os.environ.get("NLRL_SERPER_RATE_LIMIT_MAX_WAIT_SECONDS", "").strip() or "30")
+        except ValueError:
+            max_wait_seconds = 30.0
+
+        digest = hashlib.sha256(api_key.encode("utf-8")).hexdigest()[:24]
+        raw_dir = os.environ.get("NLRL_SERPER_RATE_LIMIT_DIR", "").strip()
+        limiter_dir = Path(raw_dir) if raw_dir else Path(tempfile.gettempdir()) / "gaia_serper_rate_limiter"
+        ensure_dir(limiter_dir)
+        state_path = limiter_dir / f"{digest}.json"
+        lock_path = limiter_dir / f"{digest}.lock"
+        thread_lock = self._serper_rate_locks.setdefault(digest, threading.Lock())
+        deadline = time.monotonic() + max_wait_seconds
+
+        while True:
+            wait_seconds = 0.01
+            now = time.time()
+            with thread_lock:
+                with lock_path.open("a+", encoding="utf-8") as lock_handle:
+                    fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
+                    try:
+                        try:
+                            raw_timestamps = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else []
+                        except (OSError, json.JSONDecodeError):
+                            raw_timestamps = []
+                        timestamps: list[float] = []
+                        for item in raw_timestamps if isinstance(raw_timestamps, list) else []:
+                            try:
+                                timestamp = float(item)
+                            except (TypeError, ValueError):
+                                continue
+                            if now - timestamp < window_seconds:
+                                timestamps.append(timestamp)
+                        timestamps.sort()
+                        if len(timestamps) < limit:
+                            timestamps.append(now)
+                            state_path.write_text(json.dumps(timestamps), encoding="utf-8")
+                            return
+                        wait_seconds = max(0.01, min(window_seconds, timestamps[0] + window_seconds - now))
+                        state_path.write_text(json.dumps(timestamps), encoding="utf-8")
+                    finally:
+                        fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return
+            time.sleep(min(wait_seconds, remaining, 1.0))
 
     def _serper_web_search(self, query: str, limit: int) -> list[dict[str, Any]]:
         api_keys = self._serper_api_keys()
@@ -1517,34 +1589,58 @@ class Toolbox:
             raise RuntimeError("NLRL_WEB_SEARCH_PROVIDER=serper requires NLRL_SERPER_API_KEY or NLRL_SERPER_API_KEYS.")
         endpoint = os.environ.get("NLRL_SERPER_SEARCH_ENDPOINT", "").strip() or _SERPER_SEARCH_ENDPOINT
         timeout = float(os.environ.get("NLRL_SERPER_SEARCH_TIMEOUT_SECONDS", "").strip() or "30")
+        key_rounds = max(1, int(os.environ.get("NLRL_SERPER_KEY_ROUNDS", "").strip() or "3"))
         last_error: Exception | None = None
-        for index, api_key in enumerate(api_keys):
-            try:
-                response = requests.post(
-                    endpoint,
-                    json={
-                        "q": query,
-                        "num": max(1, int(limit)),
-                    },
-                    timeout=timeout,
-                    headers={
-                        "X-API-KEY": api_key,
-                        "Content-Type": "application/json",
-                    },
-                )
-                if response.status_code >= 400:
-                    if index < len(api_keys) - 1 and self._is_serper_key_error(response):
-                        last_error = requests.HTTPError(
-                            f"Serper key rejected with status {response.status_code}: {response.text[:300]}",
-                            response=response,
-                        )
+        response: requests.Response | None = None
+        for round_index in range(key_rounds):
+            if round_index:
+                time.sleep(random.uniform(0.2, 0.8) * round_index)
+                api_keys = self._serper_api_keys()
+                if not api_keys:
+                    break
+            for index, api_key in enumerate(api_keys):
+                try:
+                    self._wait_for_serper_key_slot(api_key)
+                    response = requests.post(
+                        endpoint,
+                        json={
+                            "q": query,
+                            "num": max(1, int(limit)),
+                        },
+                        timeout=timeout,
+                        headers={
+                            "X-API-KEY": api_key,
+                            "Content-Type": "application/json",
+                        },
+                    )
+                    if response.status_code >= 400:
+                        has_more_keys = index < len(api_keys) - 1 or round_index < key_rounds - 1
+                        if has_more_keys and self._is_serper_key_error(response):
+                            if response.status_code != 429:
+                                self._serper_rejected_keys.add(api_key)
+                            else:
+                                time.sleep(random.uniform(0.05, 0.25))
+                            last_error = requests.HTTPError(
+                                f"Serper key rejected with status {response.status_code}: {response.text[:300]}",
+                                response=response,
+                            )
+                            continue
+                        response.raise_for_status()
+                    break
+                except requests.RequestException as exc:
+                    last_error = exc
+                    if index < len(api_keys) - 1 or round_index < key_rounds - 1:
+                        time.sleep(random.uniform(0.05, 0.25))
                         continue
-                    response.raise_for_status()
-                break
-            except requests.RequestException as exc:
-                last_error = exc
-                raise
+                    raise
+            else:
+                continue
+            break
         else:
+            raise RuntimeError(f"All configured Serper API keys failed: {last_error}") from last_error
+        if response is None:
+            raise RuntimeError(f"All configured Serper API keys failed: {last_error}") from last_error
+        if response.status_code >= 400:
             raise RuntimeError(f"All configured Serper API keys failed: {last_error}") from last_error
         payload = response.json()
         results: list[dict[str, Any]] = []

@@ -1,0 +1,52 @@
+{
+  "actor": {
+    "model": "gpt-5.2",
+    "base_url": "https://node-hk.sssaicode.com/api/v1/responses",
+    "api_key": "sk-sssaicode-9d340d3064511a95fb7f428f2356dfc7a08c724271a66aa1bdc72a3b2af85cb4",
+    "api_mode": "responses_sse",
+    "temperature": 0.2,
+    "reasoning_effort": "high",
+    "timeout_seconds": 180,
+    "enable_thinking": true,
+    "stream": false
+  },
+  "critic": {
+    "model": "gpt-5.2",
+    "base_url": "https://node-hk.sssaicode.com/api/v1/responses",
+    "api_key": "sk-sssaicode-9d340d3064511a95fb7f428f2356dfc7a08c724271a66aa1bdc72a3b2af85cb4",
+    "api_mode": "responses_sse",
+    "temperature": 0.2,
+    "reasoning_effort": "high",
+    "timeout_seconds": 180,
+    "enable_thinking": true,
+    "stream": false
+  },
+  "executor": {
+    "model": "qwen3-8b",
+    "base_url": "http://35.220.164.252:3888/v1",
+    "api_key": "sk-JhritIDG3G8QxS6pPJ1kIfqxWorzSAZgHgkLz4EA0RgFl9lQ",
+    "temperature": 0.1,
+    "timeout_seconds": 180,
+    "enable_thinking": true,
+    "stream": true
+  },
+  "paths": {
+    "workspace_root": "/data/xsy/project_gaia_skillrl",
+    "prompt_root": "/data/xsy/project_gaia_skillrl/prompts/boot_v6_long_rules",
+    "run_root": "/data/xsy/project_gaia_skillrl/runs",
+    "skill_library_root": "/data/xsy/project_gaia_skillrl/skill_library",
+    "experience_buffer_path": "/data/xsy/project_gaia_skillrl/runtime_state/experience_buffer.jsonl",
+    "dataset_cache_root": "/data/xsy/project_gaia_skillrl/data/cache",
+    "task_workspace_root": "/data/xsy/project_gaia_skillrl/data/working/tasks",
+    "converted_dataset_path": "/data/xsy/project_gaia_skillrl/data/converted/gaia_validation_tasks.json"
+  },
+  "runtime": {
+    "max_executor_steps": 24,
+    "iterations_per_batch": 1,
+    "max_context_chars": 48000,
+    "python_executable": "/data/xsy/project_gaia_skillrl/.venv/bin/python",
+    "shell_program": "/bin/bash",
+    "search_results_limit": 5,
+    "web_fetch_char_limit": 6000
+  }
+}

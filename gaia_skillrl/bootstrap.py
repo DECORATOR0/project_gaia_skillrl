@@ -9,6 +9,7 @@ from .config import SystemConfig
 from .llm import OpenAICompatibleLLM, log_llm_call
 from .prompting import render_prompt
 from .schemas import DatasetTask, LLMMessage
+from .skill_graph import normalize_pseudocomplete_next_lines
 from .tools import available_tool_names_for_profile
 from .utils import ensure_dir, write_json
 
@@ -153,10 +154,13 @@ class SkillBootstrapper:
                 missing.append(task_id)
             rows.append(updated)
         if missing:
-            raise ValueError(
-                "Bootstrap task preprocess response missed task_id values: "
-                + ", ".join(missing[:10])
-                + (" ..." if len(missing) > 10 else "")
+            write_json(
+                log_dir / "bootstrap_task_preprocess_missing.json",
+                {
+                    "missing_count": len(missing),
+                    "missing_task_ids": missing,
+                    "policy": "fallback_to_raw_task_payload",
+                },
             )
         preprocessed["tasks"] = rows
         preprocessed["preprocess"] = {
@@ -218,6 +222,15 @@ class SkillBootstrapper:
             raise ValueError(
                 f"Bootstrap skill attempted to create unsupported scripts: {', '.join(forbidden_paths)}"
             )
+        if self.config.runtime.bootstrap_pseudocomplete_graph:
+            normalized_skill, graph_report = normalize_pseudocomplete_next_lines(files_to_write["SKILL.md"])
+            if not graph_report.get("normalized"):
+                raise ValueError(
+                    "Bootstrap pseudo-complete graph normalization failed: "
+                    f"{graph_report.get('reason', 'unknown')}"
+                )
+            files_to_write["SKILL.md"] = normalized_skill
+            write_json(log_dir / "bootstrap_pseudocomplete_graph_report.json", graph_report)
 
         decision = {
             "summary": str(nested_skill.get("summary") or payload.get("summary") or "").strip(),

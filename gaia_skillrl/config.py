@@ -59,6 +59,7 @@ class RuntimeConfig:
     hide_stale_phase_prompts: bool = False
     bootstrap_task_preprocess: bool = False
     bootstrap_preprocess_note_char_cap: int = 700
+    bootstrap_pseudocomplete_graph: bool = False
 
 
 @dataclass
@@ -246,6 +247,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         "hide_stale_phase_prompts": _env_override("NLRL_RUNTIME_HIDE_STALE_PHASE_PROMPTS"),
         "bootstrap_task_preprocess": _env_override("NLRL_RUNTIME_BOOTSTRAP_TASK_PREPROCESS"),
         "bootstrap_preprocess_note_char_cap": _env_override("NLRL_RUNTIME_BOOTSTRAP_PREPROCESS_NOTE_CHAR_CAP"),
+        "bootstrap_pseudocomplete_graph": _env_override("NLRL_RUNTIME_BOOTSTRAP_PSEUDOCOMPLETE_GRAPH"),
     }
     for key, value in runtime_env_overrides.items():
         if value is None:
@@ -265,6 +267,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
             "bootstrap_initial_skill",
             "hide_stale_phase_prompts",
             "bootstrap_task_preprocess",
+            "bootstrap_pseudocomplete_graph",
         }:
             runtime_raw[key] = value.strip().lower() in {"1", "true", "yes", "on"}
         else:

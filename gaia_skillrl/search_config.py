@@ -30,9 +30,8 @@ def build_search_runtime_env(config: dict[str, object] | None = None) -> dict[st
     if provider:
         env["NLRL_WEB_SEARCH_PROVIDER"] = provider
 
-    fallback = str(data.get("fallback_provider", "")).strip()
-    if fallback:
-        env["NLRL_WEB_SEARCH_FALLBACK_PROVIDER"] = fallback
+    if "fallback_provider" in data:
+        env["NLRL_WEB_SEARCH_FALLBACK_PROVIDER"] = str(data.get("fallback_provider", "")).strip()
 
     serper_keys = _string_list(data.get("serper_api_keys"))
     serper_key = str(data.get("serper_api_key", "")).strip()
@@ -51,6 +50,26 @@ def build_search_runtime_env(config: dict[str, object] | None = None) -> dict[st
     timeout = data.get("serper_search_timeout_seconds")
     if timeout is not None and str(timeout).strip():
         env["NLRL_SERPER_SEARCH_TIMEOUT_SECONDS"] = str(timeout)
+
+    key_order = str(data.get("serper_key_order", "")).strip()
+    if key_order:
+        env["NLRL_SERPER_KEY_ORDER"] = key_order
+
+    key_rounds = data.get("serper_key_rounds")
+    if key_rounds is not None and str(key_rounds).strip():
+        env["NLRL_SERPER_KEY_ROUNDS"] = str(key_rounds)
+
+    per_key_rate = data.get("serper_rate_limit_per_key_per_second")
+    if per_key_rate is not None and str(per_key_rate).strip():
+        env["NLRL_SERPER_KEY_RATE_LIMIT_PER_SECOND"] = str(per_key_rate)
+
+    rate_window = data.get("serper_rate_limit_window_seconds")
+    if rate_window is not None and str(rate_window).strip():
+        env["NLRL_SERPER_RATE_LIMIT_WINDOW_SECONDS"] = str(rate_window)
+
+    rate_dir = str(data.get("serper_rate_limit_dir", "")).strip()
+    if rate_dir:
+        env["NLRL_SERPER_RATE_LIMIT_DIR"] = rate_dir
 
     http_proxy = str(data.get("http_proxy", "")).strip()
     if http_proxy:

@@ -24,6 +24,30 @@ from pydantic import BaseModel
 from transformers import AutoModelForCausalLM, AutoTokenizer, StoppingCriteria, StoppingCriteriaList, TextIteratorStreamer
 
 
+def load_generation_model(model_path: str, device: str) -> torch.nn.Module:
+    """Load text generation model, including Qwen conditional-generation checkpoints."""
+    common_kwargs = {
+        "torch_dtype": torch.bfloat16,
+        "trust_remote_code": True,
+    }
+    try:
+        return AutoModelForCausalLM.from_pretrained(model_path, **common_kwargs).to(device)
+    except Exception as causal_exc:
+        last_exc: BaseException = causal_exc
+        for class_name in ("AutoModelForImageTextToText", "AutoModelForVision2Seq"):
+            try:
+                module = __import__("transformers", fromlist=[class_name])
+                auto_cls = getattr(module, class_name)
+            except Exception as import_exc:
+                last_exc = import_exc
+                continue
+            try:
+                return auto_cls.from_pretrained(model_path, **common_kwargs).to(device)
+            except Exception as load_exc:
+                last_exc = load_exc
+        raise RuntimeError(f"failed to load model with supported auto classes: {last_exc}") from causal_exc
+
+
 class ChatRequest(BaseModel):
     model: str
     messages: list[dict[str, Any]]
@@ -49,11 +73,7 @@ def sse(obj: dict[str, Any]) -> bytes:
 def create_app(args: argparse.Namespace) -> FastAPI:
     app = FastAPI()
     tokenizer = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model_path,
-        torch_dtype=torch.bfloat16,
-        trust_remote_code=True,
-    ).to(args.device)
+    model = load_generation_model(args.model_path, args.device)
     model.eval()
     generation_slots = threading.Semaphore(max(1, args.max_concurrent_generations))
 

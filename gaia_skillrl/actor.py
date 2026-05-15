@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from .config import SystemConfig
@@ -16,6 +17,43 @@ from .skills import (
     write_skill_bundle,
 )
 from .utils import utc_timestamp, write_json
+
+
+_PHASE_HEADER_LINE_RE = re.compile(r"(?m)^##\s+Phase:\s*(\S+).*$", re.IGNORECASE)
+_NEXT_LINE_RE = re.compile(r"^\s*Next:\s*.*$", re.IGNORECASE)
+
+
+def _restore_next_lines(skill_md: str, graph: dict[str, list[str]]) -> str:
+    text = skill_md.replace("\r\n", "\n")
+    matches = list(_PHASE_HEADER_LINE_RE.finditer(text))
+    if not matches:
+        return text
+    prefix = text[: matches[0].start()]
+    sections: list[str] = []
+    for index, match in enumerate(matches):
+        name = match.group(1).strip().upper()
+        start = match.start()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        section = text[start:end]
+        targets = graph.get(name, [])
+        next_line = "Next: " + (", ".join(targets) if targets else "none")
+        lines = section.splitlines(keepends=True)
+        rewritten: list[str] = []
+        replaced = False
+        for line in lines:
+            if _NEXT_LINE_RE.match(line):
+                if not replaced:
+                    newline = "\n" if line.endswith("\n") else ""
+                    rewritten.append(next_line + newline)
+                    replaced = True
+                continue
+            rewritten.append(line)
+        if not replaced:
+            if rewritten and not rewritten[-1].endswith("\n"):
+                rewritten[-1] += "\n"
+            rewritten.append(next_line + "\n")
+        sections.append("".join(rewritten))
+    return prefix + "".join(sections)
 
 
 class SkillActor:
@@ -129,13 +167,25 @@ class SkillActor:
             "graph_unchanged": old_signature == new_signature,
             "graph_edit_policy": graph_policy,
             "graph_lock_enforced": graph_locked,
+            "graph_autorestored": False,
         }
-        write_json(log_dir / "actor_graph_lock_check.json", report)
         if graph_locked and old_signature != new_signature:
+            if old_signature.get("phase_order") == new_signature.get("phase_order"):
+                restored_skill_md = _restore_next_lines(skill_md, old_signature.get("graph", {}))
+                restored_phases = parse_skill_phases(restored_skill_md)
+                restored_signature = graph_signature_from_phases(restored_phases)
+                if restored_signature == old_signature:
+                    files_to_write["SKILL.md"] = restored_skill_md
+                    report["graph_autorestored"] = True
+                    report["restored_graph_signature"] = restored_signature
+                    write_json(log_dir / "actor_graph_lock_check.json", report)
+                    return
+            write_json(log_dir / "actor_graph_lock_check.json", report)
             raise ValueError(
                 "Actor graph lock violation: phase order or Next target set changed. "
                 "The actor may only modify common text and node-local instructions."
             )
+        write_json(log_dir / "actor_graph_lock_check.json", report)
 
     def apply(self, decision: ActorDecision) -> None:
         if not decision.target_skill_name:

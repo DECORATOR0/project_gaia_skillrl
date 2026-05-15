@@ -67,6 +67,9 @@ SKIP_FINAL_CODEX_ANALYSIS = os.environ.get("GAIA_REMAIN20_SKIP_FINAL_CODEX_ANALY
     "no",
     "off",
 }
+LONGTAIL_FRACTION = float(os.environ.get("GAIA_24EXP_LONGTAIL_FRACTION", "0.95"))
+LONGTAIL_MAX_MISSING = int(os.environ.get("GAIA_24EXP_LONGTAIL_MAX_MISSING", "2"))
+LONGTAIL_STALLED_SECONDS = int(os.environ.get("GAIA_24EXP_LONGTAIL_STALLED_SECONDS", "900"))
 
 REMOTE_HOST = "124.115.123.132"
 REMOTE_PORT = "22219"
@@ -91,6 +94,7 @@ EXISTING_8B_BOOTV4_DEV = Path(
 )
 
 sys.path.insert(0, str(ROOT))
+import scripts.gaia_queue_guard as queue_guard  # noqa: E402
 
 from gaia_skillrl.actor import SkillActor  # noqa: E402
 from gaia_skillrl.config import clone_system_config, load_system_config  # noqa: E402
@@ -199,6 +203,7 @@ LANE_BY_NAME = {lane.name: lane for lane in LANES}
 pending_evals: list[EvalSpec] = []
 running_evals: list[RunningEval] = []
 completed_evals: dict[str, dict[str, Any]] = {}
+released_evals: dict[str, dict[str, Any]] = {}
 eval_failures: dict[str, dict[str, Any]] = {}
 all_eval_specs: list[EvalSpec] = []
 dependency_specs: list[EvalSpec] = []
@@ -571,6 +576,34 @@ def bootstrap_skill_path(run_name: str) -> Path | None:
     return skill if skill.exists() else None
 
 
+def running_eval_progress(item: RunningEval) -> dict[str, Any]:
+    live = item.process.poll() is None
+    progress = queue_guard.state_progress(latest_run_dir(item.spec.run_name))
+    payload = queue_guard.progress_payload(
+        item.spec.label,
+        progress,
+        live=live,
+        fraction=LONGTAIL_FRACTION,
+        max_missing=LONGTAIL_MAX_MISSING,
+        stalled_seconds=LONGTAIL_STALLED_SECONDS,
+    )
+    payload.update(
+        {
+            "run_name": item.spec.run_name,
+            "counted": item.spec.counted,
+            "lane": item.lane.name,
+            "pid": item.process.pid,
+            "done": progress.landed,
+        }
+    )
+    return payload
+
+
+def running_eval_blocks_lane(item: RunningEval) -> bool:
+    progress = running_eval_progress(item)
+    return bool(progress["live"]) and not bool(progress["longtail_ready"])
+
+
 def enqueue_eval(spec: EvalSpec) -> None:
     with status_lock:
         pending_evals.append(spec)
@@ -583,7 +616,20 @@ def enqueue_eval(spec: EvalSpec) -> None:
 
 
 def free_lane_for(spec: EvalSpec) -> Lane | None:
-    busy = {item.lane.name for item in running_evals if item.process.poll() is None}
+    busy = {item.lane.name for item in running_evals if running_eval_blocks_lane(item)}
+    for item in running_evals:
+        progress = running_eval_progress(item)
+        if progress["live"] and progress["longtail_ready"] and item.spec.run_name not in released_evals:
+            released_evals[item.spec.run_name] = {
+                "released_at": now(),
+                "reason": "longtail_ready_for_lane_reuse",
+                "progress": progress,
+            }
+            log(
+                "long-tail lane release: "
+                f"{item.spec.run_name} lane={item.lane.name} "
+                f"states={progress['landed']}/{progress['total'] or '?'}"
+            )
     candidates = [LANE_BY_NAME[name] for name in spec.preferred_lanes if name in LANE_BY_NAME]
     candidates.extend([lane for lane in LANES if lane.model_key == spec.model_key and lane.name not in {item.name for item in candidates}])
     for lane in candidates:
@@ -657,11 +703,13 @@ def write_manifest_locked() -> None:
                 "pid": item.process.pid,
                 "log_path": str(item.log_path),
                 "started_at": item.started_at,
+                "progress": running_eval_progress(item),
             }
             for item in running_evals
             if item.process.poll() is None
         ],
         "completed": completed_evals,
+        "released_after_longtail": released_evals,
         "failures": eval_failures,
         "offline_records": offline_records,
         "offline_failures": offline_failures,
@@ -744,10 +792,24 @@ def wait_counted_evals_done() -> None:
             counted_names = {spec.run_name for spec in all_eval_specs}
             done_names = {name for name, record in completed_evals.items() if record.get("counted")}
             pending_count = len([spec for spec in pending_evals if spec.counted])
-            running_count = len([item for item in running_evals if item.spec.counted and item.process.poll() is None])
-        if counted_names and counted_names <= done_names and pending_count == 0 and running_count == 0:
+            running_progress = [
+                running_eval_progress(item)
+                for item in running_evals
+                if item.spec.counted and item.process.poll() is None
+            ]
+            released_names = {item["run_name"] for item in running_progress if item["longtail_ready"]}
+            blocking = [item for item in running_progress if not item["longtail_ready"]]
+        if counted_names and counted_names <= (done_names | released_names) and pending_count == 0:
             return
-        log(f"waiting counted evals: done={len(done_names)}/{len(counted_names)} pending={pending_count} running={running_count}")
+        summary = "; ".join(
+            f"{item['run_name']}={item['landed']}/{item['total'] or '?'} live={item['live']} longtail={item['longtail_ready']}"
+            for item in blocking[:8]
+        )
+        log(
+            f"waiting counted evals tail-or-done: done={len(done_names)}/{len(counted_names)} "
+            f"released={len(released_names)} pending={pending_count} blocking={len(blocking)}"
+            + (f"; {summary}" if summary else "")
+        )
         time.sleep(max(POLL_SECONDS, 30))
 
 
@@ -1093,6 +1155,7 @@ def write_summary(status: str, *, start_time: str, end_time: str | None = None, 
         "dependency_stats": dependency_stats,
         "offline_records": offline_records,
         "offline_failures": offline_failures,
+        "released_after_longtail": released_evals,
         "strong_usage": strong_usage,
         "eval_failures": eval_failures,
         "codex_analysis_text": analysis_text,
@@ -1497,7 +1560,15 @@ def main() -> int:
 
         wait_counted_evals_done()
         end_time = now()
-        status_label = "finished_with_offline_failures" if offline_failures else "finished"
+        if offline_failures and released_evals:
+            status_label = "finished_with_offline_failures_and_longtail_live"
+        elif offline_failures:
+            status_label = "finished_with_offline_failures"
+        elif released_evals:
+            status_label = "finished_with_longtail_live"
+        else:
+            status_label = "finished"
+        status = status_label
         if SKIP_FINAL_CODEX_ANALYSIS:
             analysis = "(final Codex analysis skipped for remain20 fast launch)"
         else:
@@ -1519,8 +1590,10 @@ def main() -> int:
     finally:
         scheduler_stop.set()
         scheduler.join(timeout=60)
-        if status == "finished":
+        if status == "finished" and not released_evals:
             cleanup_remote132()
+        elif released_evals:
+            log("remote cleanup skipped because long-tail eval children are still live")
         update_process_row(os.getpid(), status)
 
 
